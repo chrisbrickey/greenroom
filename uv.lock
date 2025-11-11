@@ -660,7 +660,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mcp-server-2"
+name = "mcp-entertainment-recommender"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
