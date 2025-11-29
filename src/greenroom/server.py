@@ -9,13 +9,17 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP, Context
 from pydantic import BaseModel, ValidationError
 
+from greenroom.config import (
+    GENRE_ID,
+    HAS_MOVIES,
+    HAS_TV_SHOWS,
+    Mood,
+    GENRE_MOOD_MAP,
+)
+from greenroom.utils import create_empty_categorized_dict
+
 # Load environment variables
 load_dotenv()
-
-# Constants for genre property keys
-GENRE_ID = "id"
-HAS_MOVIES = "has_movies"
-HAS_TV_SHOWS = "has_tv_shows"
 
 
 # Pydantic model for TMDB genre validation
@@ -84,6 +88,33 @@ async def list_genres_simplified(ctx: Context) -> str:
     # Delegate to helper function to enable unit testing without FastMCP server setup
     return await simplify_genres(ctx)
 
+@mcp.tool()
+async def categorize_genres(ctx: Context) -> Dict[str, List[str]]:
+    """
+    Categorize all available genres by mood/tone.
+
+    Groups entertainment genres into mood categories (Dark, Light, Serious, Fun)
+    using a hybrid approach: hardcoded mappings for common genres with LLM-based
+    categorization for edge cases and unknown genres.
+
+    Returns:
+        Dictionary mapping mood categories to lists of genre names:
+        {
+            "Dark": ["Horror", "Thriller", "Crime", "Mystery"],
+            "Light": ["Comedy", "Family", "Kids", "Animation", "Romance"],
+            "Serious": ["Documentary", "History", "War", "Drama"],
+            "Fun": ["Action", "Adventure", "Fantasy", "Science Fiction"],
+            "Other": ["Western", "Film Noir"]
+        }
+
+    Raises:
+        ValueError: If TMDB_API_KEY is not configured in environment
+        RuntimeError: If TMDB API returns an HTTP error status or invalid JSON
+        ConnectionError: If unable to connect to TMDB API
+    """
+    # Delegate to helper function to enable unit testing without FastMCP server setup
+    return await categorize_all_genres(ctx)
+
 async def simplify_genres(ctx: Context) -> str:
     """
     Encapsulates the genre simplification logic. See list_genres_simplified() for detailed documentation.
@@ -106,6 +137,60 @@ async def simplify_genres(ctx: Context) -> str:
         # raised when sampling is not supported by the client
         await ctx.warning(f"Sampling failed ({type(e).__name__}: {e}), using fallback")
         return ", ".join(sorted(genres.keys()))
+
+async def categorize_all_genres(ctx: Context) -> Dict[str, List[str]]:
+    """
+    Encapsulates the genre categorization logic. See categorize_genres() for detailed documentation.
+    """
+    # Fetch all genres
+    genres = fetch_genres()
+
+    # Initialize category buckets using helper function
+    categorized = create_empty_categorized_dict()
+
+    # Categorize each genre
+    for genre_name in sorted(genres.keys()):
+        mood = await _categorize_single_genre(genre_name, ctx)
+        if mood in categorized:
+            categorized[mood].append(genre_name)
+
+    return categorized
+
+async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
+    """
+    Categorize a single genre using hybrid approach.
+
+    First checks hardcoded mappings, then falls back to LLM sampling for unknown genres.
+
+    Args:
+        genre_name: The name of the genre to categorize
+        ctx: FastMCP context for LLM sampling
+
+    Returns:
+        Mood category string (MOOD_DARK, MOOD_LIGHT, MOOD_SERIOUS, or MOOD_FUN)
+    """
+    # Check hardcoded mapping first
+    if genre_name in GENRE_MOOD_MAP:
+        return GENRE_MOOD_MAP[genre_name]
+
+    # Fall back to LLM sampling for unknown genres
+    try:
+        response = await ctx.sample(
+            messages=f"Categorize the genre '{genre_name}' into exactly one of these moods: Dark, Light, Serious, or Fun. Respond with only the single mood word, nothing else.",
+            system_prompt="You are a genre categorization system. Classify genres by mood/tone:\n- Dark: suspenseful, scary, intense\n- Light: uplifting, cheerful, entertaining\n- Serious: educational, thought-provoking, heavy topics\n- Fun: exciting, adventurous, escapist\nRespond with only one word.",
+            temperature=0.0,
+            max_tokens=10
+        )
+        # Normalize and validate the response
+        mood = response.text.strip()
+        if mood in [m.value for m in Mood]:
+            return mood
+    except Exception as e:
+        # Log warning if sampling fails
+        await ctx.warning(f"LLM categorization failed for '{genre_name}' ({type(e).__name__}: {e})")
+
+    # Default fallback: categorize as "Other" if we can't determine
+    return Mood.OTHER.value
 
 def fetch_genres() -> Dict[str, Any]:
     """
