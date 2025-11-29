@@ -3,6 +3,10 @@
 A simple python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
 This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
 
+Example prompts that would trigger the use of multiple MCP tools: 
+- `What kinds of entertainment can you recommend?`
+- `What kinds of serious movies can you recommend?`
+
 ## Features
 
 ### Tools
