@@ -5,6 +5,7 @@ from fastmcp import FastMCP
 from greenroom.tools.fetching_tools import register_fetching_tools
 from greenroom.tools.operations_tools import register_operations_tools
 from greenroom.tools.agent_tools import register_agent_tools
+from greenroom.tools.discovery_tools import register_discovery_tools
 
 
 def register_all_tools(mcp: FastMCP) -> None:
@@ -12,6 +13,7 @@ def register_all_tools(mcp: FastMCP) -> None:
     register_fetching_tools(mcp)
     register_operations_tools(mcp)
     register_agent_tools(mcp)
+    register_discovery_tools(mcp)
 
 
 __all__ = ["register_all_tools"]
