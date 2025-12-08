@@ -3,16 +3,19 @@
 A simple python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
 This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
 
-Example prompts that would trigger the use of multiple MCP tools: 
+Example prompts that would trigger the use of multiple MCP tools:
 - `What kinds of entertainment can you recommend?`
 - `What kinds of serious films can you recommend?`
+- `Recommend some highly ranked documentary films from 2019.`
 
 ## Features
 
 ### Tools
 These tools are callable actions, analogous to POST requests. An agent executes these operations which may have side effects.
 Tools are annotated with `@mcp.tool()` in the FastMCP framework.
+
 - **list_genres** - Fetches all entertainment genres from TMDB API for films and TV shows, returning a unified map showing which media types support each genre
+- **discover_films** - Retrieves films from TMDB based on discovery criteria (genre, year, language) with essential metadata including title, release date, rating, and overview
 
 _NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is extracted to helpers methods, which are covered by unit tests._
 
