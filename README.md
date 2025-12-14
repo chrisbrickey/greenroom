@@ -7,6 +7,7 @@ Example prompts that would trigger the use of multiple MCP tools:
 - `What kinds of entertainment can you recommend?`
 - `What kinds of serious films can you recommend?`
 - `Recommend some highly ranked documentary films from 2019.`
+- `Recommend some television shows with dark humor.`
 
 ## Features
 
@@ -16,6 +17,7 @@ Tools are annotated with `@mcp.tool()` in the FastMCP framework.
 
 - **list_genres** - Fetches all entertainment genres from TMDB API for films and TV shows, returning a unified map showing which media types support each genre
 - **discover_films** - Retrieves films from TMDB based on discovery criteria (genre, year, language) with essential metadata including title, release date, rating, and overview
+- **discover_tv_shows** - Retrieves TV shows from TMDB based on discovery criteria (genre, first air year, language) with essential metadata including name, first air date, rating, and overview
 
 _NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is extracted to helpers methods, which are covered by unit tests._
 
