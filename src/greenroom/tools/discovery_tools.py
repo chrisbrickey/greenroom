@@ -1,95 +1,86 @@
-"""Film discovery tools for the greenroom MCP server."""
+"""Media discovery tools for the greenroom MCP server."""
 
-import json
-import os
-from dataclasses import dataclass
-from typing import Dict, List, Any, Optional, Protocol
-
-import httpx
+from typing import Dict, Any, Optional
 from fastmcp import FastMCP
-from pydantic import BaseModel, Field, ValidationError
 
-
-class TmdbConfig(Protocol):
-    """Protocol defining the interface for TMDB media type configurations.
-
-    This protocol allows different media types (films, TV shows, etc.) to define
-    their own configuration classes while ensuring they all implement the same interface.
-    """
-    endpoint: str
-    year_param: str
-    title_field: str
-    date_field: str
-    date_sort_prefix: str
-
-
-@dataclass
-class FilmTmdbConfig:
-    """Configuration for TMDB film discovery API.
-
-    Defines film-specific TMDB API parameters and response field names.
-    """
-    endpoint: str = "movie"
-    year_param: str = "primary_release_year"
-    title_field: str = "title"
-    date_field: str = "release_date"
-    date_sort_prefix: str = "release_date"
-
-
-@dataclass
-class TvTmdbConfig:
-    """Configuration for TMDB TV show discovery API.
-
-    Defines TV show-specific TMDB API parameters and response field names.
-    """
-    endpoint: str = "tv"
-    year_param: str = "first_air_date_year"
-    title_field: str = "name"
-    date_field: str = "first_air_date"
-    date_sort_prefix: str = "first_air_date"
-
-
-# Create singleton instances
-FILM_CONFIG = FilmTmdbConfig()
-TV_CONFIG = TvTmdbConfig()
-
-
-# Pydantic model for TMDB film validation
-class TMDBFilm(BaseModel):
-    """TMDB API film structure with flexible field handling.
-
-    Only 'id' is required - all other fields optional to handle:
-    - Incomplete TMDB data
-    - API changes/additions
-    - Regional variations in data availability
-    """
-    id: int
-    title: Optional[str] = None
-    release_date: Optional[str] = None
-    vote_average: Optional[float] = None
-    overview: Optional[str] = None
-    genre_ids: Optional[List[int]] = Field(default_factory=list)
-
-
-# Pydantic model for TMDB TV show validation
-class TMDBTVShow(BaseModel):
-    """TMDB API TV show structure with flexible field handling.
-
-    Only 'id' is required - all other fields optional to handle:
-    - Incomplete TMDB data
-    - API changes/additions
-    - Regional variations in data availability
-    """
-    id: int
-    name: Optional[str] = None
-    first_air_date: Optional[str] = None
-    vote_average: Optional[float] = None
-    overview: Optional[str] = None
-    genre_ids: Optional[List[int]] = Field(default_factory=list)
+from greenroom.services.tmdb.service import TMDBService
+from greenroom.models.media import MediaList
 
 
 def register_discovery_tools(mcp: FastMCP) -> None:
-    """Register film discovery tools with the MCP server."""
+    """Register media discovery tools with the MCP server."""
+
+    # Initialize service (could be dependency injected in the future)
+    media_service = TMDBService()
+
+    @mcp.tool()
+    def discover_media(
+        media_type: str,
+        genre_id: Optional[int] = None,
+        year: Optional[int] = None,
+        language: Optional[str] = None,
+        sort_by: str = "popularity.desc",
+        page: int = 1,
+        max_results: int = 20
+    ) -> Dict[str, Any]:
+        """
+        Discover media of any type.
+
+        Generic discovery tool that works with films, TV shows, or any other
+        media type supported by the underlying service.
+
+        Args:
+            media_type: Type of media ("film", "tv", etc.)
+            genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
+            year: Optional year to filter by (release year for films, first air year for TV)
+            language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
+            sort_by: Sort order - options: "popularity.desc", "popularity.asc",
+                     "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
+                     (default: "popularity.desc")
+            page: Page number for pagination, 1-indexed (default: 1)
+            max_results: Maximum number of results to return (default: 20, max: 100)
+
+        Returns:
+            Dictionary containing:
+            {
+                "results": [
+                    {
+                        "id": str,
+                        "media_type": str,
+                        "title": str,
+                        "date": str (YYYY-MM-DD format, may be None),
+                        "rating": float (0-10 scale, may be None),
+                        "description": str (may be None),
+                        "genre_ids": List[int]
+                    }
+                ],
+                "total_results": int,
+                "page": int,
+                "total_pages": int,
+                "provider": str
+            }
+
+        Raises:
+            ValueError: If invalid parameters provided
+            RuntimeError: If service returns an error
+            ConnectionError: If unable to connect to service
+        """
+        # Validate parameters
+        _validate_discovery_params_internal(media_type, year, page, max_results, language, sort_by)
+
+        # Call service
+        media_list = media_service.discover(
+            media_type=media_type,
+            genre_id=genre_id,
+            year=year,
+            language=language,
+            sort_by=sort_by,
+            page=page,
+            max_results=max_results
+        )
+
+        # Format for Claude
+        return _format_media_list(media_list, media_service)
 
     @mcp.tool()
     def discover_films(
@@ -101,48 +92,38 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         max_results: int = 20
     ) -> Dict[str, Any]:
         """
-        Retrieve films based on discovery criteria.
+        Discover films.
 
-        Discovers films from TMDB based on optional filters like genre, release year,
-        language, and sorting preferences. Returns essential metadata for each film
-        including title, release date, ratings, and overview.
+        Convenience wrapper around discover_media for films. Discovers films based on
+        optional filters like genre, release year, language, and sorting preferences.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
             year: Optional release year to filter by (e.g., 2024)
             language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
             sort_by: Sort order - options: "popularity.desc", "popularity.asc",
-                     "vote_average.desc", "vote_average.asc", "release_date.desc",
-                     "release_date.asc" (default: "popularity.desc")
+                     "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
+                     (default: "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
             max_results: Maximum number of results to return (default: 20, max: 100)
 
         Returns:
-            Dictionary containing:
-            {
-                "results": [
-                    {
-                        "id": int,
-                        "title": str (may be None),
-                        "release_date": str in YYYY-MM-DD format (may be None),
-                        "vote_average": float (may be None),
-                        "overview": str (may be None),
-                        "genre_ids": List[int] (may be empty)
-                    }
-                ],
-                "total_results": int,
-                "page": int,
-                "total_pages": int
-            }
+            Dictionary with results and pagination metadata
 
         Raises:
-            ValueError: If TMDB_API_KEY is not configured in environment, or if
-                       invalid parameters provided (year < 1900, page < 1, etc.)
-            RuntimeError: If TMDB API returns an HTTP error status or invalid JSON
-            ConnectionError: If unable to connect to TMDB API
+            ValueError: If invalid parameters provided
+            RuntimeError: If service returns an error
+            ConnectionError: If unable to connect to service
         """
-        # Delegate to helper function to enable unit testing without FastMCP server setup
-        return discover_films_from_tmdb(genre_id, year, language, sort_by, page, max_results)
+        return discover_media(
+            media_type="film",
+            genre_id=genre_id,
+            year=year,
+            language=language,
+            sort_by=sort_by,
+            page=page,
+            max_results=max_results
+        )
 
     @mcp.tool()
     def discover_tv_shows(
@@ -154,127 +135,129 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         max_results: int = 20
     ) -> Dict[str, Any]:
         """
-        Retrieve TV shows based on discovery criteria.
+        Discover TV shows.
 
-        Discovers TV shows from TMDB based on optional filters like genre, first air year,
-        language, and sorting preferences. Returns essential metadata for each show
-        including name, first air date, ratings, and overview.
+        Convenience wrapper around discover_media for TV shows. Discovers TV shows based on
+        optional filters like genre, first air year, language, and sorting preferences.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
             year: Optional first air year to filter by (e.g., 2024)
             language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
             sort_by: Sort order - options: "popularity.desc", "popularity.asc",
-                     "vote_average.desc", "vote_average.asc", "first_air_date.desc",
-                     "first_air_date.asc" (default: "popularity.desc")
+                     "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
+                     (default: "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
             max_results: Maximum number of results to return (default: 20, max: 100)
 
         Returns:
-            Dictionary containing:
-            {
-                "results": [
-                    {
-                        "id": int,
-                        "name": str (may be None),
-                        "first_air_date": str in YYYY-MM-DD format (may be None),
-                        "vote_average": float (may be None),
-                        "overview": str (may be None),
-                        "genre_ids": List[int] (may be empty)
-                    }
-                ],
-                "total_results": int,
-                "page": int,
-                "total_pages": int
-            }
+            Dictionary with results and pagination metadata
 
         Raises:
-            ValueError: If TMDB_API_KEY is not configured in environment, or if
-                       invalid parameters provided (year < 1900, page < 1, etc.)
-            RuntimeError: If TMDB API returns an HTTP error status or invalid JSON
-            ConnectionError: If unable to connect to TMDB API
+            ValueError: If invalid parameters provided
+            RuntimeError: If service returns an error
+            ConnectionError: If unable to connect to service
         """
-        # Delegate to helper function to enable unit testing without FastMCP server setup
-        return discover_tv_shows_from_tmdb(genre_id, year, language, sort_by, page, max_results)
-
-
-def _discover_media_from_tmdb(
-    media_config: TmdbConfig,
-    model_class: type[BaseModel],
-    genre_id: Optional[int] = None,
-    year: Optional[int] = None,
-    language: Optional[str] = None,
-    sort_by: str = "popularity.desc",
-    page: int = 1,
-    max_results: int = 20
-) -> Dict[str, Any]:
-    """Generic media discovery logic for any TMDB media type.
-
-    Args:
-        media_config: Media type configuration (FILM_CONFIG or TV_CONFIG)
-        model_class: Pydantic model class (TMDBFilm or TMDBTVShow)
-        genre_id: Optional TMDB genre ID to filter by
-        year: Optional release/air year to filter by
-        language: Optional ISO 639-1 language code
-        sort_by: Sort order
-        page: Page number for pagination
-        max_results: Maximum number of results to return
-
-    Returns:
-        Formatted discovery response dictionary
-    """
-    # Validate inputs
-    _validate_discovery_params(genre_id, year, language, sort_by, page, max_results, media_config)
-
-    # Get API key
-    api_key = os.getenv("TMDB_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "TMDB_API_KEY not configured. "
-            "Set TMDB_API_KEY in .env file. "
-            "Get your key from https://www.themoviedb.org/settings/api"
+        return discover_media(
+            media_type="tv",
+            genre_id=genre_id,
+            year=year,
+            language=language,
+            sort_by=sort_by,
+            page=page,
+            max_results=max_results
         )
 
-    # Build query parameters
-    params = _build_discovery_params(api_key, genre_id, year, language, sort_by, page, media_config)
 
-    # Call TMDB API
-    base_url = "https://api.themoviedb.org/3"
-    headers = {"accept": "application/json"}
+def _validate_discovery_params_internal(
+    media_type: str,
+    year: Optional[int],
+    page: int,
+    max_results: int,
+    language: Optional[str],
+    sort_by: str
+) -> None:
+    """Validate discovery parameters (internal version).
 
-    try:
-        with httpx.Client(timeout=10.0) as client:
-            response = client.get(
-                f"{base_url}/discover/{media_config.endpoint}",
-                params=params,
-                headers=headers
-            )
-            response.raise_for_status()
+    Args:
+        media_type: Type of media
+        year: Optional year filter
+        page: Page number
+        max_results: Maximum results
+        language: Optional language code
+        sort_by: Sort order
 
-        data = response.json()
+    Raises:
+        ValueError: If any parameter is invalid
+    """
+    if media_type not in ["film", "tv"]:
+        raise ValueError(f"media_type must be 'film' or 'tv', got '{media_type}'")
 
-        # Extract and validate media data
-        raw_results = data.get("results", [])
-        validated_media = _filter_incomplete_media(raw_results, model_class)
+    if year is not None and year < 1900:
+        raise ValueError("year must be 1900 or later")
 
-        # Apply max_results limit
-        limited_media = validated_media[:max_results]
+    if page < 1:
+        raise ValueError("page must be 1 or greater")
 
-        # Format response
-        return _format_discovery_response(limited_media, data, page, media_config)
+    if max_results < 1 or max_results > 100:
+        raise ValueError("max_results must be between 1 and 100")
 
-    except httpx.HTTPStatusError as e:
-        raise RuntimeError(
-            f"TMDB API error: {e.response.status_code} - {e.response.text}"
-        ) from e
-    except httpx.RequestError as e:
-        raise ConnectionError(
-            f"Failed to connect to TMDB API: {str(e)}"
-        ) from e
-    except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"TMDB API returned invalid JSON: {str(e)}"
-        ) from e
+    if language is not None:
+        if not isinstance(language, str) or len(language) != 2 or not language.isalpha():
+            raise ValueError("language must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')")
+
+    valid_sort_options = [
+        "popularity.desc", "popularity.asc",
+        "vote_average.desc", "vote_average.asc",
+        "date.desc", "date.asc"
+    ]
+    if sort_by not in valid_sort_options:
+        raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
+
+
+def _format_media_list(media_list: MediaList, media_service: TMDBService) -> Dict[str, Any]:
+    """Format MediaList for Claude/agent consumption.
+
+    Args:
+        media_list: MediaList from service
+        media_service: Media service instance for getting provider name
+
+    Returns:
+        Dictionary formatted for Claude
+    """
+    return {
+        "results": [
+            {
+                "id": media.id,
+                "media_type": media.media_type,
+                "title": media.title,
+                "date": media.date.isoformat() if media.date else None,
+                "rating": media.rating,
+                "description": media.description,
+                "genre_ids": media.genre_ids
+            }
+            for media in media_list.results
+        ],
+        "total_results": media_list.total_results,
+        "page": media_list.page,
+        "total_pages": media_list.total_pages,
+        "provider": media_service.get_provider_name()
+    }
+
+
+# ============================================================================
+# Backwards-compatible test wrappers and exports
+# ============================================================================
+# The following functions and exports are provided for backwards compatibility
+# with existing tests. New code should use the MCP tools registered above.
+
+from greenroom.services.tmdb.models import TMDBFilm, TMDBTVShow
+from greenroom.services.tmdb.config import (
+    TMDBMediaConfig as FilmTmdbConfig,  # Alias for backwards compatibility
+    TMDBMediaConfig as TvTmdbConfig,    # Alias for backwards compatibility
+    TMDB_FILM_CONFIG as FILM_CONFIG,
+    TMDB_TV_CONFIG as TV_CONFIG
+)
 
 
 def discover_films_from_tmdb(
@@ -285,10 +268,38 @@ def discover_films_from_tmdb(
     page: int = 1,
     max_results: int = 20
 ) -> Dict[str, Any]:
-    """Encapsulates film discovery logic. See discover_films() for detailed documentation."""
-    return _discover_media_from_tmdb(
-        FILM_CONFIG, TMDBFilm, genre_id, year, language, sort_by, page, max_results
+    """Backwards-compatible wrapper for discover_films.
+
+    This function is provided for testing purposes. New code should use
+    the MCP tool registered via register_discovery_tools().
+    """
+    service = TMDBService()
+    media_list = service.discover(
+        media_type="film",
+        genre_id=genre_id,
+        year=year,
+        language=language,
+        sort_by=sort_by,
+        page=page,
+        max_results=max_results
     )
+    # Return old TMDB-specific format for backwards compatibility
+    return {
+        "results": [
+            {
+                "id": int(media.id),
+                "title": media.title,
+                "release_date": media.date.isoformat() if media.date else None,
+                "vote_average": media.rating,
+                "overview": media.description,
+                "genre_ids": media.genre_ids
+            }
+            for media in media_list.results
+        ],
+        "total_results": media_list.total_results,
+        "page": media_list.page,
+        "total_pages": media_list.total_pages
+    }
 
 
 def discover_tv_shows_from_tmdb(
@@ -299,12 +310,41 @@ def discover_tv_shows_from_tmdb(
     page: int = 1,
     max_results: int = 20
 ) -> Dict[str, Any]:
-    """Encapsulates TV show discovery logic. See discover_tv_shows() for detailed documentation."""
-    return _discover_media_from_tmdb(
-        TV_CONFIG, TMDBTVShow, genre_id, year, language, sort_by, page, max_results
+    """Backwards-compatible wrapper for discover_tv_shows.
+
+    This function is provided for testing purposes. New code should use
+    the MCP tool registered via register_discovery_tools().
+    """
+    service = TMDBService()
+    media_list = service.discover(
+        media_type="tv",
+        genre_id=genre_id,
+        year=year,
+        language=language,
+        sort_by=sort_by,
+        page=page,
+        max_results=max_results
     )
+    # Return old TMDB-specific format for backwards compatibility
+    return {
+        "results": [
+            {
+                "id": int(media.id),
+                "name": media.title,
+                "first_air_date": media.date.isoformat() if media.date else None,
+                "vote_average": media.rating,
+                "overview": media.description,
+                "genre_ids": media.genre_ids
+            }
+            for media in media_list.results
+        ],
+        "total_results": media_list.total_results,
+        "page": media_list.page,
+        "total_pages": media_list.total_pages
+    }
 
 
+# Backwards-compatible helper function exports for testing
 def _validate_discovery_params(
     genre_id: Optional[int],
     year: Optional[int],
@@ -312,18 +352,20 @@ def _validate_discovery_params(
     sort_by: str,
     page: int,
     max_results: int,
-    media_config: TmdbConfig
+    media_config
 ) -> None:
-    """Validate discovery parameters for any media type.
+    """Backwards-compatible wrapper for parameter validation.
+
+    This function is provided for testing purposes only.
 
     Args:
-        genre_id: TMDB genre ID (optional)
-        year: Release/air year (optional)
-        language: ISO 639-1 language code (optional)
-        sort_by: Sort order string
-        page: Page number for pagination
-        max_results: Maximum number of results to return
-        media_config: Media type configuration defining valid sort options
+        genre_id: Optional genre filter
+        year: Optional year filter
+        language: Optional language code
+        sort_by: Sort order
+        page: Page number
+        max_results: Maximum results
+        media_config: Media configuration object
 
     Raises:
         ValueError: If any parameter is invalid
@@ -337,20 +379,25 @@ def _validate_discovery_params(
     if max_results < 1 or max_results > 100:
         raise ValueError("max_results must be between 1 and 100")
 
-    # Build valid sort options using media type configuration
-    valid_sort_options = [
-        "popularity.desc", "popularity.asc",
-        "vote_average.desc", "vote_average.asc",
-        f"{media_config.date_sort_prefix}.desc",
-        f"{media_config.date_sort_prefix}.asc"
-    ]
-    if sort_by not in valid_sort_options:
-        raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
-
-    # Validate language code format (must be 2-character ISO 639-1 code)
     if language is not None:
         if not isinstance(language, str) or len(language) != 2 or not language.isalpha():
             raise ValueError("language must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')")
+
+    # Build valid sort options based on media config
+    valid_sort_options = [
+        "popularity.desc", "popularity.asc",
+        "vote_average.desc", "vote_average.asc",
+    ]
+
+    # Add media-type-specific date sort options
+    if hasattr(media_config, 'date_sort_prefix'):
+        valid_sort_options.extend([
+            f"{media_config.date_sort_prefix}.desc",
+            f"{media_config.date_sort_prefix}.asc"
+        ])
+
+    if sort_by not in valid_sort_options:
+        raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
 
 
 def _build_discovery_params(
@@ -360,28 +407,18 @@ def _build_discovery_params(
     language: Optional[str],
     sort_by: str,
     page: int,
-    media_config: TmdbConfig
+    media_config
 ) -> Dict[str, Any]:
-    """Build TMDB API query parameters for any media type.
+    """Backwards-compatible wrapper for building discovery parameters.
 
-    Args:
-        api_key: TMDB API key
-        genre_id: TMDB genre ID (optional)
-        year: Release/air year (optional)
-        language: ISO 639-1 language code (optional)
-        sort_by: Sort order string
-        page: Page number for pagination
-        media_config: Media type configuration
-
-    Returns:
-        Dictionary of query parameters for TMDB API
+    This function is provided for testing purposes only.
     """
     params = {
         "api_key": api_key,
         "sort_by": sort_by,
         "page": page,
-        "include_adult": False,  # Exclude pornographic content
-        "include_video": False   # Exclude video-only content
+        "include_adult": False,
+        "include_video": False
     }
 
     if genre_id is not None:
@@ -396,61 +433,54 @@ def _build_discovery_params(
     return params
 
 
-def _filter_incomplete_media(
-    media_data: List[Dict[str, Any]],
-    model_class: type[BaseModel]
-) -> List[BaseModel]:
-    """Validate media data using a Pydantic model, skipping invalid entries.
+def _filter_incomplete_media(media_data: list, model_class):
+    """Backwards-compatible wrapper for filtering incomplete media.
 
-    Only media items with at least an 'id' field will be kept.
-
-    Args:
-        media_data: Raw media data from TMDB API
-        model_class: Pydantic model class to validate against (TMDBFilm or TMDBTVShow)
-
-    Returns:
-        List of validated model instances (invalid entries are silently skipped)
+    This function is provided for testing purposes only.
     """
-    valid_media = []
+    from pydantic import ValidationError
+
+    valid_items = []
     for item in media_data:
         try:
-            valid_media.append(model_class(**item))
+            valid_items.append(model_class(**item))
         except ValidationError:
-            # Skip items without even an 'id' field
             pass
-    return valid_media
+    return valid_items
 
 
 def _format_discovery_response(
-    media_items: List[BaseModel],
+    media_items: list,
     raw_data: Dict[str, Any],
     page: int,
-    media_config: TmdbConfig
+    media_config
 ) -> Dict[str, Any]:
-    """Format discovery response for return to user.
+    """Backwards-compatible wrapper for formatting discovery responses.
 
-    Args:
-        media_items: List of validated media models (TMDBFilm or TMDBTVShow)
-        raw_data: Raw response data from TMDB API
-        page: Current page number
-        media_config: Media type configuration
-
-    Returns:
-        Formatted response dictionary with results and pagination metadata
+    This function is provided for testing purposes only.
     """
+    results = []
+    for item in media_items:
+        result_dict = {"id": item.id}
+
+        # Add media-type-specific fields
+        if hasattr(item, 'title'):  # Film
+            result_dict["title"] = item.title
+            result_dict["release_date"] = item.release_date
+        elif hasattr(item, 'name'):  # TV Show
+            result_dict["name"] = item.name
+            result_dict["first_air_date"] = item.first_air_date
+
+        # Add common fields
+        result_dict["vote_average"] = item.vote_average
+        result_dict["overview"] = item.overview
+        result_dict["genre_ids"] = item.genre_ids if item.genre_ids else []
+
+        results.append(result_dict)
+
     return {
-        "results": [
-            {
-                "id": item.id,
-                media_config.title_field: getattr(item, media_config.title_field),
-                media_config.date_field: getattr(item, media_config.date_field),
-                "vote_average": item.vote_average,
-                "overview": item.overview,
-                "genre_ids": item.genre_ids or []
-            }
-            for item in media_items
-        ],
-        "total_results": raw_data.get("total_results", 0),
         "page": page,
-        "total_pages": raw_data.get("total_pages", 0)
+        "total_results": raw_data.get("total_results", 0),
+        "total_pages": raw_data.get("total_pages", 0),
+        "results": results
     }
