@@ -71,34 +71,45 @@ You should see:
 ```
 _*Generally, Claude's response in this case will be null because we are asking to resample the existing claude agent, which is not permitted by Anthropic._
 
-## Project Structure
-This project follows the modern Python src/ layout to support convenient packaging and testing.
+## Architecture
 
 ```
-greenroom/                  # project root
+Tools Layer (MCP Interface)
+    ↓
+Services Layer (Business Logic)
+    ↓
+Client Layer (HTTP Communication)
+    ↓
+Models Layer (Provider-agnostic data structures)
+```
+
+
+### Project Structure
+This project follows the python package src/ layout to support convenient packaging and testing.
+Below is a simplified diagram of the project.
+
+```
+greenroom/                          # project root
 ├── src/
-│   └── greenroom/          # python package
-│       ├── __init__.py
-│       └── server.py       # primary entry point to server
-├── pyproject.toml          # configuration and dependencies
-├── uv.lock                 # dependency lock file (auto-generated)
-├── .python-version            
-├── .gitignore
-└── README.md
-```
-
-### Growing This Project
-As the server becomes more complex, new files will be added to the package (`src/greenroom/`).
-
-```
-src/greenroom/          # python package
-├── __init__.py
-├── server.py           # primary entry point to server
-├── tools/              # tools organized into modules
-│   ├── __init__.py
-│   ├── agent_tools.py
-│   └── media_tools.py
-└── utils.py            # shared utilities
+│   └── greenroom/                   # python package
+│       ├── server.py                # primary entry point to server
+│       ├── config.py                # centralized configuration
+│       ├── utils.py                 # shared utilities
+│       │
+│       ├── models/                  # provider-agnostic data models      
+│       │
+│       ├── services/                # business logic layer
+│       │   ├── base.py              # MediaDiscoveryService protocol
+│       │   └── tmdb/                # TMDB provider implementation
+│       │
+│       └── tools/                   # MCP tools (exposed via FastMCP)
+│            ├── discovery_tools.py  # media discovery
+│            └── agent_tools.py      # LLM comparison
+│
+├── tests/greenroom/                 # test suite
+│
+├── pyproject.toml                   # configuration and dependencies
+└── uv.lock                          # dependency lock file (auto-generated)
 ```
 
 ## Dependencies
