@@ -12,6 +12,7 @@ from greenroom.tools.discovery_tools import (
     _filter_incomplete_films,
     _format_discovery_response,
     TMDBFilm,
+    FILM_CONFIG,
 )
 
 
@@ -216,55 +217,55 @@ def test_discover_films_filters_by_language(monkeypatch, httpx_mock: HTTPXMock):
 def test_validate_discovery_params_rejects_invalid_year():
     """Test parameter validation rejects invalid year."""
     with pytest.raises(ValueError, match="Year must be 1900 or later"):
-        _validate_discovery_params(None, 1899, None, "popularity.desc", 1, 20)
+        _validate_discovery_params(None, 1899, None, "popularity.desc", 1, 20, FILM_CONFIG)
 
 
 def test_validate_discovery_params_rejects_invalid_page():
     """Test parameter validation rejects invalid page."""
     with pytest.raises(ValueError, match="Page must be 1 or greater"):
-        _validate_discovery_params(None, None, None, "popularity.desc", 0, 20)
+        _validate_discovery_params(None, None, None, "popularity.desc", 0, 20, FILM_CONFIG)
 
 
 def test_validate_discovery_params_rejects_invalid_max_results():
     """Test parameter validation rejects invalid max_results."""
     with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-        _validate_discovery_params(None, None, None, "popularity.desc", 1, 150)
+        _validate_discovery_params(None, None, None, "popularity.desc", 1, 150, FILM_CONFIG)
 
     with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-        _validate_discovery_params(None, None, None, "popularity.desc", 1, 0)
+        _validate_discovery_params(None, None, None, "popularity.desc", 1, 0, FILM_CONFIG)
 
 
 def test_validate_discovery_params_rejects_invalid_sort_by():
     """Test parameter validation rejects invalid sort_by."""
     with pytest.raises(ValueError, match="sort_by must be one of"):
-        _validate_discovery_params(None, None, None, "invalid.sort", 1, 20)
+        _validate_discovery_params(None, None, None, "invalid.sort", 1, 20, FILM_CONFIG)
 
 
 def test_validate_discovery_params_rejects_invalid_language():
     """Test parameter validation rejects invalid language code."""
     # Too long
     with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-        _validate_discovery_params(None, None, "eng", "popularity.desc", 1, 20)
+        _validate_discovery_params(None, None, "eng", "popularity.desc", 1, 20, FILM_CONFIG)
 
     # Too short
     with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-        _validate_discovery_params(None, None, "e", "popularity.desc", 1, 20)
+        _validate_discovery_params(None, None, "e", "popularity.desc", 1, 20, FILM_CONFIG)
 
     # Contains numbers
     with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-        _validate_discovery_params(None, None, "e1", "popularity.desc", 1, 20)
+        _validate_discovery_params(None, None, "e1", "popularity.desc", 1, 20, FILM_CONFIG)
 
     # Not a string
     with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-        _validate_discovery_params(None, None, 12, "popularity.desc", 1, 20)
+        _validate_discovery_params(None, None, 12, "popularity.desc", 1, 20, FILM_CONFIG)
 
 
 def test_validate_discovery_params_accepts_valid_inputs():
     """Test parameter validation accepts valid inputs."""
     # Should not raise any exceptions
-    _validate_discovery_params(28, 2024, "en", "popularity.desc", 1, 20)
-    _validate_discovery_params(None, None, None, "vote_average.desc", 2, 50)
-    _validate_discovery_params(18, 1900, "fr", "release_date.asc", 10, 100)
+    _validate_discovery_params(28, 2024, "en", "popularity.desc", 1, 20, FILM_CONFIG)
+    _validate_discovery_params(None, None, None, "vote_average.desc", 2, 50, FILM_CONFIG)
+    _validate_discovery_params(18, 1900, "fr", "release_date.asc", 10, 100, FILM_CONFIG)
 
 
 def test_discover_films_raises_value_error_when_api_key_missing(monkeypatch):
@@ -333,7 +334,8 @@ def test_build_discovery_params():
         year=2024,
         language="en",
         sort_by="vote_average.desc",
-        page=2
+        page=2,
+        media_config=FILM_CONFIG
     )
 
     assert params["api_key"] == "test_key"
@@ -354,7 +356,8 @@ def test_build_discovery_params_with_optional_none():
         year=None,
         language=None,
         sort_by="popularity.desc",
-        page=1
+        page=1,
+        media_config=FILM_CONFIG
     )
 
     assert "with_genres" not in params
