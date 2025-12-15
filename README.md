@@ -6,7 +6,9 @@ This server integrates with [TMDB](www.themoviedb.org), a free and community-dri
 Example prompts that would trigger the use of multiple MCP tools:
 - `What kinds of entertainment can you recommend?`
 - `What kinds of serious films can you recommend?`
-- `Recommend some highly ranked documentary films from 2019.`
+- `Recommend some highly ranked comedy films from 2025.`
+- `Recommend french language documentary films from the 2010s.`
+- *compare multiple agents*: `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?` 
 
 ## Features
 
@@ -60,7 +62,7 @@ This server includes configuration and tools to use multiple agents to work on a
 #### How It Works
 
 ```
-To trigger this tool, ask Claude: Using the compare_llm_reponses tool, why is the ocean blue? 
+To trigger this tool, ask Claude: Using the compare_llm_reponses tool, why is the ocean blue?
 
 You should see: 
   Both Claude* and Ollama responses 
@@ -69,34 +71,46 @@ You should see:
 ```
 _*Generally, Claude's response in this case will be null because we are asking to resample the existing claude agent, which is not permitted by Anthropic._
 
-## Project Structure
-This project follows the modern Python src/ layout to support convenient packaging and testing.
+## Architecture
 
 ```
-greenroom/                  # project root
+Tools Layer (MCP Interface)
+    ↓
+Services Layer (Business Logic)
+    ↓
+Client Layer (Provider-specific HTTP Communication)
+    ↓
+Models Layer (Provider-agnostic Data Structures)
+```
+
+### Project Structure
+This project follows the python package src/ layout to support convenient packaging and testing.
+Below is a simplified diagram of the project.
+
+```
+greenroom/                          # project root
 ├── src/
-│   └── greenroom/          # python package
-│       ├── __init__.py
-│       └── server.py       # primary entry point to server
-├── pyproject.toml          # configuration and dependencies
-├── uv.lock                 # dependency lock file (auto-generated)
-├── .python-version            
-├── .gitignore
-└── README.md
-```
-
-### Growing This Project
-As the server becomes more complex, new files will be added to the package (`src/greenroom/`).
-
-```
-src/greenroom/          # python package
-├── __init__.py
-├── server.py           # primary entry point to server
-├── tools/              # tools organized into modules
-│   ├── __init__.py
-│   ├── agent_tools.py
-│   └── media_tools.py
-└── utils.py            # shared utilities
+│   └── greenroom/                   # python package
+│       │
+│       ├── server.py                # primary entry point to server
+│       ├── config.py                # centralized configuration
+│       ├── utils.py                 # shared utilities
+│       │
+│       │
+│       ├── models/                  # data models     
+│       │
+│       ├── services/                # business logic 
+│       │   ├── base.py              # media discovery protocols
+│       │   └── tmdb/                # TMDB provider implementation
+│       │
+│       └── tools/                   # MCP tools (exposed via FastMCP)
+│            ├── discovery_tools.py  # media discovery
+│            └── agent_tools.py      # LLM comparison
+│
+├── tests/greenroom/                 # test suite
+│
+├── pyproject.toml                   # configuration and dependencies
+└── uv.lock                          # dependency lock file (auto-generated)
 ```
 
 ## Dependencies
