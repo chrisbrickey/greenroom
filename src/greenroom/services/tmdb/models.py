@@ -15,3 +15,16 @@ class TMDBFilm(BaseModel):
     vote_average: Optional[float] = None
     overview: Optional[str] = None
     genre_ids: Optional[List[int]] = Field(default_factory=list)
+
+
+class TMDBTVShow(BaseModel):
+    """TMDB TV show response structure.
+
+    Matches the structure returned by TMDB API for TV show data.
+    """
+    id: int
+    name: Optional[str] = None
+    first_air_date: Optional[str] = None
+    vote_average: Optional[float] = None
+    overview: Optional[str] = None
+    genre_ids: Optional[List[int]] = Field(default_factory=list)

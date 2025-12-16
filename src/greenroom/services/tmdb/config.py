@@ -21,7 +21,7 @@ class TMDBMediaConfig:
 
 
 # Import models here to avoid circular import
-from greenroom.services.tmdb.models import TMDBFilm
+from greenroom.services.tmdb.models import TMDBFilm, TMDBTVShow
 
 
 TMDB_FILM_CONFIG = TMDBMediaConfig(
@@ -31,4 +31,13 @@ TMDB_FILM_CONFIG = TMDBMediaConfig(
     date_field="release_date",
     date_sort_prefix="release_date",
     model_class=TMDBFilm
+)
+
+TMDB_TV_CONFIG = TMDBMediaConfig(
+    endpoint="tv",
+    year_param="first_air_date_year",
+    title_field="name",
+    date_field="first_air_date",
+    date_sort_prefix="first_air_date",
+    model_class=TMDBTVShow
 )

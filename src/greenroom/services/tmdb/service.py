@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from greenroom.models.media import Media, MediaList
 from greenroom.services.tmdb.client import TMDBClient
-from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDBMediaConfig
+from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDB_TV_CONFIG, TMDBMediaConfig
 
 
 class TMDBService:
@@ -21,7 +21,8 @@ class TMDBService:
         """Initialize the TMDB service."""
         self.client = TMDBClient()
         self.config_map = {
-            "film": TMDB_FILM_CONFIG
+            "film": TMDB_FILM_CONFIG,
+            "tv": TMDB_TV_CONFIG
         }
 
     def discover(
