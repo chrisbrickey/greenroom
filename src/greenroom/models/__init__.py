@@ -4,7 +4,7 @@ from greenroom.models.media import Media, MediaList
 from greenroom.models.media_types import (
     MediaType,
     MEDIA_TYPE_FILM,
-    MEDIA_TYPE_TV,
+    MEDIA_TYPE_TELEVISION,
     MEDIA_TYPE_PODCAST,
     MEDIA_TYPE_BOOK,
     MEDIA_TYPE_MUSIC,
@@ -16,7 +16,7 @@ __all__ = [
     "MediaList",
     "MediaType",
     "MEDIA_TYPE_FILM",
-    "MEDIA_TYPE_TV",
+    "MEDIA_TYPE_TELEVISION",
     "MEDIA_TYPE_PODCAST",
     "MEDIA_TYPE_BOOK",
     "MEDIA_TYPE_MUSIC",
