@@ -298,5 +298,6 @@ This might be useful if the configuration is not correct. Removing the server an
 7. The agent incorporates the results into its response to you
 
 ## Future Development
-- Add alternative media types (e.g. podcasts)
-- Add helper agents using local LLMs or an additional LLM integration and coordinate the activity of those agents
+- Add more media types (e.g., podcasts, books)
+- Add providers to augment data sources
+- Create an entertainment concierge experience (e.g., manager agent flow)
