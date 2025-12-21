@@ -5,7 +5,7 @@ from typing import Literal
 # String constants for media types
 # These constants should be used instead of magic strings throughout the codebase
 MEDIA_TYPE_FILM = "film"
-MEDIA_TYPE_TV = "tv"
+MEDIA_TYPE_TELEVISION = "television"
 MEDIA_TYPE_PODCAST = "podcast"
 MEDIA_TYPE_BOOK = "book"
 MEDIA_TYPE_MUSIC = "music"
@@ -17,7 +17,7 @@ MEDIA_TYPE_GAME = "game"
 # Note: We use Literal instead of Enum for lighter weight and easier extensibility
 MediaType = Literal[
     "film",
-    "tv",
+    "television",
     "podcast",
     "book",
     "music",

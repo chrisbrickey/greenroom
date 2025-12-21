@@ -9,7 +9,7 @@ from greenroom.tools.discovery_tools import (
 )
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media import Media, MediaList
-from greenroom.models.media_types import MEDIA_TYPE_FILM
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 
 def test_validate_discovery_params_internal_rejects_invalid_year():
@@ -39,6 +39,13 @@ def test_validate_discovery_params_internal_accepts_valid_inputs():
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, 2024, 1, 20, "en", "popularity.desc")
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, None, 2, 50, None, "vote_average.desc")
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, 1900, 10, 100, "fr", "date.asc")
+
+
+def test_validate_discovery_params_internal_accepts_television_media_type():
+    """Test parameter validation accepts television media type."""
+    # Should not raise any exceptions
+    _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, 2024, 1, 20, "en", "popularity.desc")
+    _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, None, 2, 50, None, "vote_average.desc")
 
 
 def test_format_media_list_formats_correctly(monkeypatch):
@@ -82,3 +89,30 @@ def test_format_media_list_formats_correctly(monkeypatch):
     assert result["results"][1]["rating"] is None
     assert result["results"][1]["description"] is None
     assert result["results"][1]["genre_ids"] == []
+
+
+def test_format_media_list_formats_television_correctly(monkeypatch):
+    """Test that _format_media_list creates correct output for television shows."""
+    monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
+
+    media_items = [
+        Media(id="1", media_type=MEDIA_TYPE_TELEVISION, title="Television Show 1", date=date(2024, 1, 15), rating=8.0, description="Description 1", genre_ids=[18]),
+        Media(id="2", media_type=MEDIA_TYPE_TELEVISION, title="Television Show 2", date=None, rating=None, description=None, genre_ids=[]),
+    ]
+
+    media_list = MediaList(
+        results=media_items,
+        total_results=50,
+        page=1,
+        total_pages=3
+    )
+
+    service = TMDBService()
+    result = _format_media_list(media_list, service)
+
+    assert result["page"] == 1
+    assert result["total_results"] == 50
+    assert result["total_pages"] == 3
+    assert result["provider"] == "TMDB"
+    assert len(result["results"]) == 2
+    assert result["results"][0]["media_type"] == MEDIA_TYPE_TELEVISION

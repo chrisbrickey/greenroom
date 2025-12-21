@@ -3,12 +3,29 @@
 A simple python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
 This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
 
-Example prompts that would trigger the use of multiple MCP tools:
+## Use the tools
+The greenroom MCP server can be used to answer a wide range of questions related to entertainment. 
+Below are some example prompts that will trigger the use of multiple MCP tools, but these are just examples.
+
+### Recommendations
 - `What kinds of entertainment can you recommend?`
-- `What kinds of serious films can you recommend?`
-- `Recommend some highly ranked comedy films from 2025.`
-- `Recommend french language documentary films from the 2010s.`
-- *compare multiple agents*: `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?` 
+- `I'm in the mood for something serious. Recommend some entertainment content.`
+- `Recommend spanish language documentary films from the 2010s.`
+- `I loved Arrested Development and Atlanta. Recommend other entertainment options that I would like.`
+
+### Event Planning
+- `I'm hosting a French film night. Recommend highly-rated French films across genres.`
+- `Plan a binge-watching weekend including recent dramas and comedies.`
+- `Let's host a sci-fi movie marathon. Recommend 5 sci-fi films from different decades.`
+
+### Industry Analysis
+- `Analyze which genres have the highest average ratings in film vs television.`
+- `Compare action films made in the 1980s to those made in the 2020s.`
+- `What are the top-rated spanish language television shows in each genre?`
+
+### Compare the output of multiple agents
+- `Using compare_llm_responses, what makes a great science fiction film?`
+- `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?` 
 
 ## Features
 
@@ -16,8 +33,9 @@ Example prompts that would trigger the use of multiple MCP tools:
 These tools are callable actions, analogous to POST requests. An agent executes these operations which may have side effects.
 Tools are annotated with `@mcp.tool()` in the FastMCP framework.
 
-- **list_genres** - Fetches all entertainment genres from TMDB API for films and TV shows, returning a unified map showing which media types support each genre
-- **discover_films** - Retrieves films from TMDB based on discovery criteria (genre, year, language) with essential metadata including title, release date, rating, and overview
+- **list_genres** - Fetches all entertainment genres for films and television, returning a unified map showing which media types support each genre
+- **discover_films** - Retrieves films based on discovery criteria (genre, year, language) with essential metadata including title, release date, rating, and overview
+- **discover_television** - Retrieves television shows based on discovery criteria (genre, year, language) with essential metadata including title, first air date, rating, and overview
 
 _NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is extracted to helpers methods, which are covered by unit tests._
 
