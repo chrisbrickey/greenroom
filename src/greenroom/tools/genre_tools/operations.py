@@ -6,10 +6,10 @@ from fastmcp import FastMCP, Context
 
 from greenroom.config import Mood, GENRE_MOOD_MAP
 from greenroom.utils import create_empty_categorized_dict
-from greenroom.tools.fetching_tools import fetch_genres
+from greenroom.tools.genre_tools.fetching import fetch_genres
 
 
-def register_operations_tools(mcp: FastMCP) -> None:
+def register_genre_operations_tools(mcp: FastMCP) -> None:
     """Register genre operations tools with the MCP server."""
 
     @mcp.tool()

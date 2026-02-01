@@ -1,6 +1,6 @@
 # greenroom
 
-A simple python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
+A python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
 This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
 
 ## Use the tools
@@ -122,8 +122,9 @@ greenroom/                          # project root
 │       │   └── tmdb/                # TMDB provider implementation
 │       │
 │       └── tools/                   # MCP tools (exposed via FastMCP)
-│            ├── discovery_tools.py  # media discovery
-│            └── agent_tools.py      # LLM comparison
+│            ├── agent_tools.py      # coordinate multiple agents and LLMs
+│            ├── discovery_tools.py  # search for specific entertainment content
+│            └── genre_tools/        # optimize genre discovery and presentation to user
 │
 ├── tests/greenroom/                 # test suite
 │
