@@ -5,7 +5,7 @@ from pytest_httpx import HTTPXMock
 
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
-from greenroom.tools.fetching_tools import fetch_genres
+from greenroom.tools.genre_tools.fetching import fetch_genres
 
 
 def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):

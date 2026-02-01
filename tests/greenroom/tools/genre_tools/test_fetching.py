@@ -1,10 +1,10 @@
-"""Tests for fetching_tools.py."""
+"""Tests for genre_tools/fetching.py."""
 
 import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from greenroom.tools.fetching_tools import fetch_genres
+from greenroom.tools.genre_tools.fetching import fetch_genres
 
 
 def test_fetch_genres_combines_media_types(monkeypatch, httpx_mock: HTTPXMock):

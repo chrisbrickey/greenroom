@@ -18,7 +18,7 @@ class TMDBGenre(BaseModel):
     name: str
 
 
-def register_fetching_tools(mcp: FastMCP) -> None:
+def register_genre_fetching_tools(mcp: FastMCP) -> None:
     """Register genre fetching tools with the MCP server."""
 
     @mcp.tool()
