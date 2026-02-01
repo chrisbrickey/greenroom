@@ -124,7 +124,7 @@ greenroom/                          # project root
 │       └── tools/                   # MCP tools (exposed via FastMCP)
 │            ├── agent_tools.py      # coordinate multiple agents and LLMs
 │            ├── discovery_tools.py  # search for specific entertainment content
-│            └── genre_tools/        # optimize genre discovery and presentation to user
+│            └── genre_tools.py      # optimize genre discovery and presentation to user
 │
 ├── tests/greenroom/                 # test suite
 │

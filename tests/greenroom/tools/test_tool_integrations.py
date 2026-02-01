@@ -5,7 +5,7 @@ from pytest_httpx import HTTPXMock
 
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
-from greenroom.tools.genre_tools.fetching import fetch_genres
+from greenroom.tools.genre_tools import fetch_genres
 
 
 def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
@@ -27,7 +27,8 @@ def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTT
     )
 
     # Get genre ID from list_genres
-    genres = fetch_genres()
+    service = TMDBService()
+    genres = fetch_genres(service)
     action_id = genres["Action"]["id"]
 
     assert action_id == 28
@@ -48,8 +49,7 @@ def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTT
     )
 
     # Use genre ID to discover films via service
-    service = TMDBService()
-    result = service.discover(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
+    result = service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Action Film"
@@ -75,7 +75,8 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
     )
 
     # Get genre ID from list_genres
-    genres = fetch_genres()
+    service = TMDBService()
+    genres = fetch_genres(service)
     drama_id = genres["Drama"]["id"]
 
     assert drama_id == 18
@@ -96,8 +97,7 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
     )
 
     # Use genre ID to discover television via service
-    service = TMDBService()
-    result = service.discover(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    result = service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Drama Show"
@@ -124,7 +124,8 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
     )
 
     # Get shared genre ID from list_genres
-    genres = fetch_genres()
+    service = TMDBService()
+    genres = fetch_genres(service)
     drama_id = genres["Drama"]["id"]
 
     assert drama_id == 18
@@ -162,8 +163,7 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
     )
 
     # Discover films with the shared genre
-    service = TMDBService()
-    film_result = service.discover(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
+    film_result = service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
 
     assert len(film_result.results) == 1
     assert film_result.results[0].title == "Drama Film"
@@ -171,7 +171,7 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
     assert drama_id in film_result.results[0].genre_ids
 
     # Discover television with the same shared genre
-    tv_result = service.discover(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    tv_result = service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(tv_result.results) == 1
     assert tv_result.results[0].title == "Drama Show"

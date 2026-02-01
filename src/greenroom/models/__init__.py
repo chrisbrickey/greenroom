@@ -1,6 +1,7 @@
 """Standard data models for media representation."""
 
 from greenroom.models.media import Media, MediaList
+from greenroom.models.genre import Genre, GenreList
 from greenroom.models.media_types import (
     MediaType,
     MEDIA_TYPE_FILM,
@@ -14,6 +15,8 @@ from greenroom.models.media_types import (
 __all__ = [
     "Media",
     "MediaList",
+    "Genre",
+    "GenreList",
     "MediaType",
     "MEDIA_TYPE_FILM",
     "MEDIA_TYPE_TELEVISION",
