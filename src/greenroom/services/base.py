@@ -1,8 +1,33 @@
-"""Base protocol for media discovery services."""
+"""Base protocols for media services."""
 
 from typing import Protocol, Optional
 from greenroom.models.media import MediaList
+from greenroom.models.genre import GenreList
 from greenroom.models.media_types import MediaType
+
+
+class GenreService(Protocol):
+    """Protocol defining the interface for genre services.
+
+    Any provider (TMDB, IMDb, OMDb, etc.) must implement this interface to be
+    compatible with the genre tools.
+    """
+
+    def get_genres(self) -> GenreList:
+        """Fetch all available genres.
+
+        Returns:
+            GenreList with standardized Genre objects including media type availability
+
+        Raises:
+            RuntimeError: For service errors
+            ConnectionError: For network errors
+        """
+        ...
+
+    def get_provider_name(self) -> str:
+        """Return the name of this provider (e.g., 'TMDB', 'IMDb')."""
+        ...
 
 
 class MediaDiscoveryService(Protocol):

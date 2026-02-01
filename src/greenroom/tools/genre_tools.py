@@ -1,23 +1,54 @@
-"""Genre operations tools for the greenroom MCP server."""
+"""Categorization tools for the greenroom MCP server."""
 
-from typing import Dict, List, Any
+from typing import Dict, Any, List
 
 from fastmcp import FastMCP, Context
 
-from greenroom.config import Mood, GENRE_MOOD_MAP
+from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood, GENRE_MOOD_MAP
 from greenroom.utils import create_empty_categorized_dict
-from greenroom.tools.genre_tools.fetching import fetch_genres
+from greenroom.services.base import GenreService
+from greenroom.services.tmdb.service import TMDBService
 
 
-def register_genre_operations_tools(mcp: FastMCP) -> None:
-    """Register genre operations tools with the MCP server."""
+__all__ = ["register_genre_tools", "fetch_genres"]
+
+
+def register_genre_tools(mcp: FastMCP) -> None:
+    """Register all genre-related tools with the MCP server and TMDB service."""
+
+    service = TMDBService()
+
+    @mcp.tool()
+    def list_genres() -> Dict[str, Any]:
+        """
+        List all available entertainment genres across media types and providers.
+
+        Returns:
+            Dictionary mapping genre names to their properties:
+            {
+                "Documentary": {
+                    "id": 99,
+                    "has_films": true,
+                    "has_tv_shows": true
+                },
+                "Action": {
+                    "id": 28,
+                    "has_films": true,
+                    "has_tv_shows": false
+                },
+                ...
+            }
+        """
+
+        # Delegate to helper function to enable unit testing without FastMCP server setup
+        return fetch_genres(service)
 
     @mcp.tool()
     async def list_genres_simplified(ctx: Context) -> str:
         """
         Get a simplified list of available genre names.
 
-        Uses LLM sampling to extract just the genre names from the full genre data,
+        Uses LLM sampling to extract genre names from the full genre data,
         returning a clean, formatted list without IDs or media type flags.
         Falls back to direct extraction if sampling is not supported.
 
@@ -27,8 +58,9 @@ def register_genre_operations_tools(mcp: FastMCP) -> None:
         Raises:
             Sampling errors are logged and result in fallback to direct key extraction.
         """
+
         # Delegate to helper function to enable unit testing without FastMCP server setup
-        return await simplify_genres(ctx)
+        return await simplify_genres(ctx, service)
 
     @mcp.tool()
     async def categorize_genres(ctx: Context) -> Dict[str, List[str]]:
@@ -48,22 +80,36 @@ def register_genre_operations_tools(mcp: FastMCP) -> None:
                 "Fun": ["Action", "Adventure", "Fantasy", "Science Fiction"],
                 "Other": ["Western", "Film Noir"]
             }
-
-        Raises:
-            ValueError: If TMDB_API_KEY is not configured in environment
-            RuntimeError: If TMDB API returns an HTTP error status or invalid JSON
-            ConnectionError: If unable to connect to TMDB API
         """
+
         # Delegate to helper function to enable unit testing without FastMCP server setup
-        return await categorize_all_genres(ctx)
+        return await categorize_all_genres(ctx, service)
 
+# =============================================================================
+# Helper Methods (extracted from tools to ease unit testing)
+# =============================================================================
 
-async def simplify_genres(ctx: Context) -> str:
-    """
-    Encapsulates the genre simplification logic. See list_genres_simplified() for detailed documentation.
-    """
-    # Fetch the full genre data
-    genres = fetch_genres()
+def fetch_genres(service: GenreService) -> Dict[str, Any]:
+    """Fetch genres from the service and transform to dict format."""
+
+    # Get genres from service
+    genre_list = service.get_genres()
+
+    # Transform to the expected dict format for backward compatibility
+    return {
+        genre.name: {
+            GENRE_ID: genre.id,
+            HAS_FILMS: genre.has_films,
+            HAS_TV_SHOWS: genre.has_tv_shows
+        }
+        for genre in genre_list.genres
+    }
+
+async def simplify_genres(ctx: Context, service: GenreService) -> str:
+    """Encapsulates the genre simplification logic."""
+
+    # Fetch all genre data
+    genres = fetch_genres(service)
 
     try:
         # Use LLM sampling to format the response
@@ -75,18 +121,19 @@ async def simplify_genres(ctx: Context) -> str:
             max_tokens=500
         )
         return response.text
+
     except Exception as e:
         # Catch broad exception because we don't know the specific exception type
         # raised when sampling is not supported by the client
         await ctx.warning(f"Sampling failed ({type(e).__name__}: {e}), using fallback")
         return ", ".join(sorted(genres.keys()))
 
-async def categorize_all_genres(ctx: Context) -> Dict[str, List[str]]:
-    """
-    Encapsulates the genre categorization logic. See categorize_genres() for detailed documentation.
-    """
+
+async def categorize_all_genres(ctx: Context, service: GenreService) -> Dict[str, List[str]]:
+    """Encapsulates the genre categorization logic."""
+
     # Fetch all genres
-    genres = fetch_genres()
+    genres = fetch_genres(service)
 
     # Initialize category buckets using helper function
     categorized = create_empty_categorized_dict()
@@ -101,17 +148,10 @@ async def categorize_all_genres(ctx: Context) -> Dict[str, List[str]]:
 
 async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
     """
-    Categorize a single genre using hybrid approach.
-
+    Categorize a single genre using hybrid approach:
     First checks hardcoded mappings, then falls back to LLM sampling for unknown genres.
-
-    Args:
-        genre_name: The name of the genre to categorize
-        ctx: FastMCP context for LLM sampling
-
-    Returns:
-        Mood category string (MOOD_DARK, MOOD_LIGHT, MOOD_SERIOUS, or MOOD_FUN)
     """
+
     # Check hardcoded mapping first
     if genre_name in GENRE_MOOD_MAP:
         return GENRE_MOOD_MAP[genre_name]
@@ -124,10 +164,12 @@ async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
             temperature=0.0,
             max_tokens=10
         )
+
         # Normalize and validate the response
         mood = response.text.strip()
         if mood in [m.value for m in Mood]:
             return mood
+
     except Exception as e:
         # Log warning if sampling fails
         await ctx.warning(f"LLM categorization failed for '{genre_name}' ({type(e).__name__}: {e})")

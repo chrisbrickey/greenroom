@@ -66,7 +66,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
 
         # Call service
-        media_list = media_service.discover(
+        media_list = media_service.get_media(
             media_type=MEDIA_TYPE_FILM,
             genre_id=genre_id,
             year=year,
@@ -131,7 +131,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
 
         # Call service
-        media_list = media_service.discover(
+        media_list = media_service.get_media(
             media_type=MEDIA_TYPE_TELEVISION,
             genre_id=genre_id,
             year=year,

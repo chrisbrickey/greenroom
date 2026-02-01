@@ -4,6 +4,15 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
+class TMDBGenre(BaseModel):
+    """TMDB API genre structure.
+
+    Matches the structure returned by TMDB API for genre data.
+    """
+    id: int
+    name: str
+
+
 class TMDBFilm(BaseModel):
     """TMDB film response structure.
 
