@@ -11,8 +11,7 @@ from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 def register_discovery_tools(mcp: FastMCP) -> None:
     """Register media discovery tools with the MCP server."""
 
-    # Initialize service (could be dependency injected in the future)
-    media_service = TMDBService()
+    service = TMDBService()
 
     @mcp.tool()
     def discover_films(
@@ -62,22 +61,9 @@ def register_discovery_tools(mcp: FastMCP) -> None:
             RuntimeError: If service returns an error
             ConnectionError: If unable to connect to service
         """
-        # Validate parameters
-        _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
 
-        # Call service
-        media_list = media_service.get_media(
-            media_type=MEDIA_TYPE_FILM,
-            genre_id=genre_id,
-            year=year,
-            language=language,
-            sort_by=sort_by,
-            page=page,
-            max_results=max_results
-        )
-
-        # Format for agent
-        return _format_media_list(media_list, media_service)
+        # Delegate to helper function to enable unit testing without FastMCP server setup
+        return fetch_films(service, genre_id, year, language, sort_by, page, max_results)
 
     @mcp.tool()
     def discover_television(
@@ -127,23 +113,67 @@ def register_discovery_tools(mcp: FastMCP) -> None:
             RuntimeError: If service returns an error
             ConnectionError: If unable to connect to service
         """
-        # Validate parameters
-        _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
 
-        # Call service
-        media_list = media_service.get_media(
-            media_type=MEDIA_TYPE_TELEVISION,
-            genre_id=genre_id,
-            year=year,
-            language=language,
-            sort_by=sort_by,
-            page=page,
-            max_results=max_results
-        )
+        # Delegate to helper function to enable unit testing without FastMCP server setup
+        return fetch_television(service, genre_id, year, language, sort_by, page, max_results)
 
-        # Format for agent
-        return _format_media_list(media_list, media_service)
+# =============================================================================
+# Helper Methods (extracted from tools to ease unit testing)
+# =============================================================================
 
+def fetch_films(
+    media_service: TMDBService,
+    genre_id: Optional[int] = None,
+    year: Optional[int] = None,
+    language: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    page: int = 1,
+    max_results: int = 20,
+) -> Dict[str, Any]:
+
+    # Validate parameters
+    _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
+
+    # Call service
+    media_list = media_service.get_media(
+        media_type=MEDIA_TYPE_FILM,
+        genre_id=genre_id,
+        year=year,
+        language=language,
+        sort_by=sort_by,
+        page=page,
+        max_results=max_results
+    )
+
+    # Format for agent
+    return _format_media_list(media_list, media_service)
+
+def fetch_television(
+    media_service: TMDBService,
+    genre_id: Optional[int] = None,
+    year: Optional[int] = None,
+    language: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    page: int = 1,
+    max_results: int = 20
+) -> Dict[str, Any]:
+
+    # Validate parameters
+    _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
+
+    # Call service
+    media_list = media_service.get_media(
+        media_type=MEDIA_TYPE_TELEVISION,
+        genre_id=genre_id,
+        year=year,
+        language=language,
+        sort_by=sort_by,
+        page=page,
+        max_results=max_results
+    )
+
+    # Format for agent
+    return _format_media_list(media_list, media_service)
 
 def _validate_discovery_params_internal(
     media_type: str,
@@ -166,6 +196,7 @@ def _validate_discovery_params_internal(
     Raises:
         ValueError: If any parameter is invalid
     """
+
     if media_type not in [MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION]:
         raise ValueError(f"media_type must be one of: {MEDIA_TYPE_FILM}, {MEDIA_TYPE_TELEVISION}")
 
@@ -202,6 +233,7 @@ def _format_media_list(media_list: MediaList, media_service: TMDBService) -> Dic
     Returns:
         Dictionary formatted for agent
     """
+
     return {
         "results": [
             {
