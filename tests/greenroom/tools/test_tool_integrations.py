@@ -9,7 +9,7 @@ from greenroom.tools.genre_tools import fetch_genres
 
 
 def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
-    """Integration test: Use genre ID from list_genres with discover."""
+    """Use genre ID from genre tools to discover specific films with media discovery tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     # Mock list_genres response
@@ -57,7 +57,7 @@ def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTT
 
 
 def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
-    """Integration test: Use genre ID from list_genres with television discovery."""
+    """Use genre ID from genre tools to discover specific tv shows with media discovery tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     # Mock list_genres response with Drama genre available for both films and TV
@@ -106,7 +106,7 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
 
 
 def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock: HTTPXMock):
-    """Integration test: Discover both films and TV shows with the same shared genre ID."""
+    """Discover both films and TV shows with the same shared genre ID."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     # Mock list_genres response with Drama genre available for both films and TV

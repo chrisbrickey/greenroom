@@ -118,8 +118,9 @@ greenroom/                          # project root
 │       ├── models/                  # data models     
 │       │
 │       ├── services/                # business logic 
-│       │   ├── base.py              # media discovery protocols
-│       │   └── tmdb/                # TMDB provider implementation
+│       │   ├── llm/                 # LLM agent services and clients
+│       │   ├── tmdb/                # TMDB provider services and clients
+│       │   └── protocols.py         # standardizes methods across media providers
 │       │
 │       └── tools/                   # MCP tools (exposed via FastMCP)
 │            ├── agent_tools.py      # coordinate multiple agents and LLMs

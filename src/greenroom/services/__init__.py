@@ -1,5 +1,5 @@
 """Service layer for media discovery from various providers."""
 
-from greenroom.services.base import MediaDiscoveryService
+from greenroom.services.protocols import MediaService
 
-__all__ = ["MediaDiscoveryService"]
+__all__ = ["MediaService"]

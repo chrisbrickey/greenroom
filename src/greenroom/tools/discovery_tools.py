@@ -3,6 +3,7 @@
 from typing import Dict, Any, Optional
 from fastmcp import FastMCP
 
+from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
@@ -122,7 +123,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 # =============================================================================
 
 def fetch_films(
-    media_service: TMDBService,
+    media_service: MediaService,
     genre_id: Optional[int] = None,
     year: Optional[int] = None,
     language: Optional[str] = None,
@@ -149,7 +150,7 @@ def fetch_films(
     return _format_media_list(media_list, media_service)
 
 def fetch_television(
-    media_service: TMDBService,
+    media_service: MediaService,
     genre_id: Optional[int] = None,
     year: Optional[int] = None,
     language: Optional[str] = None,
@@ -223,7 +224,7 @@ def _validate_discovery_params_internal(
             raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
 
 
-def _format_media_list(media_list: MediaList, media_service: TMDBService) -> Dict[str, Any]:
+def _format_media_list(media_list: MediaList, media_service: MediaService) -> Dict[str, Any]:
     """Format MediaList for agent consumption.
 
     Args:
