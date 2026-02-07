@@ -6,7 +6,7 @@ from fastmcp import FastMCP, Context
 
 from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood, GENRE_MOOD_MAP
 from greenroom.utils import create_empty_categorized_dict
-from greenroom.services.base import GenreService
+from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
 
 
@@ -89,7 +89,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_genres(service: GenreService) -> Dict[str, Any]:
+def fetch_genres(service: MediaService) -> Dict[str, Any]:
     """Fetch genres from the service and transform to dict format."""
 
     # Get genres from service
@@ -105,7 +105,7 @@ def fetch_genres(service: GenreService) -> Dict[str, Any]:
         for genre in genre_list.genres
     }
 
-async def simplify_genres(ctx: Context, service: GenreService) -> str:
+async def simplify_genres(ctx: Context, service: MediaService) -> str:
     """Encapsulates the genre simplification logic."""
 
     # Fetch all genre data
@@ -129,7 +129,7 @@ async def simplify_genres(ctx: Context, service: GenreService) -> str:
         return ", ".join(sorted(genres.keys()))
 
 
-async def categorize_all_genres(ctx: Context, service: GenreService) -> Dict[str, List[str]]:
+async def categorize_all_genres(ctx: Context, service: MediaService) -> Dict[str, List[str]]:
     """Encapsulates the genre categorization logic."""
 
     # Fetch all genres

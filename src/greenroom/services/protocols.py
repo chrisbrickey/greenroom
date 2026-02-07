@@ -1,16 +1,17 @@
 """Base protocols for media services."""
 
-from typing import Protocol, Optional
-from greenroom.models.media import MediaList
+from typing import Optional, Protocol, runtime_checkable
 from greenroom.models.genre import GenreList
+from greenroom.models.media import MediaList
 from greenroom.models.media_types import MediaType
 
 
-class GenreService(Protocol):
-    """Protocol defining the interface for genre services.
+@runtime_checkable
+class MediaService(Protocol):
+    """Protocol defining the unified interface for media services.
 
     Any provider (TMDB, IMDb, OMDb, etc.) must implement this interface to be
-    compatible with the genre tools.
+    compatible with the genre and media discovery tools.
     """
 
     def get_genres(self) -> GenreList:
@@ -25,19 +26,7 @@ class GenreService(Protocol):
         """
         ...
 
-    def get_provider_name(self) -> str:
-        """Return the name of this provider (e.g., 'TMDB', 'IMDb')."""
-        ...
-
-
-class MediaDiscoveryService(Protocol):
-    """Protocol defining the interface for media discovery services.
-
-    Any provider (TMDB, IMDb, OMDb, etc.) must implement this interface to be
-    compatible with the discovery tools.
-    """
-
-    def discover(
+    def get_media(
         self,
         media_type: MediaType,
         genre_id: Optional[int] = None,
@@ -50,13 +39,13 @@ class MediaDiscoveryService(Protocol):
         """Discover media matching the given criteria.
 
         Args:
-            media_type: Type-safe media type (use constants from media_types module)
-            genre_id: Optional genre filter
-            year: Optional year filter (release/air year)
+            media_type: Type-safe group of media to discover
+            genre_id: Optional filter on genre provided via genre tools
+            year: Optional filter on year of release
             language: Optional ISO 639-1 language code
-            sort_by: Sort order (provider-specific format, None uses provider default)
-            page: Page number (1-indexed)
-            max_results: Maximum results to return
+            sort_by: Optional sort order string that is provider-specific
+            page: Page number for pagination (1-indexed, defaults to 1)
+            max_results: Maximum number of results to return; defaults to 20
 
         Returns:
             MediaList with standardized Media objects
