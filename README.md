@@ -9,7 +9,7 @@ This server integrates with [TMDB](www.themoviedb.org), a free and community-dri
 #### Compare outputs of multiple agents and models
 ![compare LLM responses](docs/images/compare-llms-duo.png)
 
-## Use the tools
+## Use Cases
 The greenroom MCP server can be used to answer a wide range of questions related to entertainment. 
 Below are some example prompts that will trigger the use of multiple MCP tools, but these are just examples.
 
@@ -36,49 +36,18 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 ## Features
 
 ### Tools
-These tools are callable actions, analogous to POST requests. An agent executes these operations which may have side effects.
-Tools are annotated with `@mcp.tool()` in the FastMCP framework.
+MCP tools are callable actions, analogous to POST requests, that an agent executes.
+They are annotated with `@mcp.tool()` in the FastMCP framework.
 
-- **list_genres** - Fetches all entertainment genres for films and television, returning a unified map showing which media types support each genre
-- **discover_films** - Retrieves films based on discovery criteria (genre, year, language) with essential metadata including title, release date, rating, and overview
-- **discover_television** - Retrieves television shows based on discovery criteria (genre, year, language) with essential metadata including title, first air date, rating, and overview
+Tools for the greenroom server include:
+- **list_genres** - Fetches all entertainment genres, returning a unified map showing which media types support each genre
+- **categorize_genres** - Maps human moods to media genres to improve hit rate from human prompts
+- **discover_films** - Retrieves films based on discovery criteria, returning metadata for informed reponses and improved categorization 
+- **discover_television** - Retrieves television shows based on discovery criteria, returning metadata for informed responses and improved categorization
 
-_NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is extracted to helpers methods, which are covered by unit tests._
+_NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is delegated to helpers methods, which are covered by the test suite._
 
-### Resources
-These resources provide read-only data, analogous to GET requests. An agent reads the information but does not performa actions. 
-Resources are annotated with `@mcp.resource()` in the FastMCP framework.
-- **config://version** - Get server version
-
-### Contexts
-Context-aware tools use FastMCP's `Context` parameter to access advanced MCP features like LLM sampling.
-
-- **list_genres_simplified** - Returns a simplified list of genre names by using `ctx.sample()` to leverage the agent's LLM capabilities for data transformation - it asks the current client's LLM to reformat the data. If sampling is not supported by the current client, then the method falls back to direct extraction of genres using python code.
-
-#### How It Works
-
-```
-Agent → list_genres_simplified(ctx)
-      → fetch_genres() [gets full structured data]
-      → ctx.sample() [asks agent to simplify it]
-      → Returns clean, sorted list to agent
-```
-
-#### Client Support
-
-Sampling requires the MCP client to support callbacks to its LLM, which is a security-sensitive feature:
-- **Claude Desktop**: Does NOT currently support sampling
-- **Claude Code**: Also unlikely to support it currently
-
-#### Use Cases
-
-While using a context to simplify the format of `list_genres` is overkill, the pattern demonstrates agent-to-agent communication useful for:
-- Summarizing large documents
-- Analyzing sentiment
-- Making recommendations based on data
-- Multi-step workflows with decision points
-
-### Multiple Agents
+### Coordination of Agents
 This server includes configuration and tools to use multiple agents to work on a single task. 
 
 - **compare_llm_responses** - Receives a prompt and fields it out to two agents (defaults to Claude and Ollama). It constrains the responses by temperature and token limit.
@@ -94,6 +63,18 @@ You should see:
   Structured JSON output showing both LLM outputs side-by-side
 ```
 _*Generally, Claude's response in this case will be null because we are asking to resample the existing claude agent, which is not permitted by Anthropic._
+
+
+### Contexts
+Context-aware tools use FastMCP's `Context` parameter to access advanced MCP features like LLM sampling.
+
+Example:
+- **list_genres_simplified** - Returns a simplified list of genre names by using `ctx.sample()` to leverage the agent's LLM capabilities for data transformation.
+
+### Resources
+These resources provide read-only data, analogous to GET requests. An agent reads the information but does not performa actions. 
+Resources are annotated with `@mcp.resource()` in the FastMCP framework.
+- **config://version** - Get server version
 
 ## Architecture
 
