@@ -208,7 +208,7 @@ ollama list
 ## Development
 
 ### Run the MCP Server Locally
-The server will start and communicate via stdio (standard input/output), which is the standard transport for local MCP servers.
+The server will start and communicate via stdin/stdout. It uses stdio by default, which is the standard transport for local MCP servers.
 
 ```
 # best approach uses the MCP entry point
@@ -237,57 +237,78 @@ uv run python -m pytest -v
 ```
 
 ## Interacting with the MCP Server
+
 This project does not yet include a frontend with which to exercise the server, but you can use anthropic tooling to interact with the server.
 
 ### via Claude Code
-Claude Code has native MCP client support so it can connect to your MCP server using the stdio transport, which the 
-FastMCP server already uses. 
 
-1. Run the setup command
-```
-  # Updates local claude settings and runs the MCP server
-  claude mcp add --transport stdio greenroom uv -- --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
-```
+1. Start the server
+   ```
+   # update local claude settings and run the MCP server
+   claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+   ```
 
 2. Open claude code
-- Enter `/mcp` to view available MCP servers. Confirm that greenroom is one of them.
+   - Enter `/mcp` to view available MCP servers. 
+   - Confirm that greenroom is one of them with status: connected.
 
 3. Exercise the server
-- Resources can be referenced with @ mentions
-- Tools will automatically be used during the conversation
-- Prompts show up as / slash commands
-- To explicitly test a tool, ask claude to call the tool. e.g. `Call the <name-of-tool> tool from the MCP server called greenroom.`
+   - Resources can be referenced with @ mentions
+   - Tools will automatically be used during the conversation
+   - Prompts show up as / slash commands
+   - To explicitly test a tool, ask claude to call the tool. e.g. `Call the <name-of-tool> tool from the MCP server called greenroom.`
 
-When you update the methods on the MCP server, you must rerun all of the above steps in order for the updates to be available to the claude session.
+> When you update the methods on the MCP server, you must rerun the above steps in order for the updates to be available to the claude session.
 
-#### Claude code troubleshooting
-When you run the set up command (`claude mcp add`), a configuration for that MCP server is added to your local claude settings. 
-On my local machine, mcp configurations are stored at `/Users/$USER_NAME/.claude.json`.
+### via Claude Desktop
 
-Manual configuration of the MCP server in claude settings:
-```json
-# Replace /ABSOLUTE/PATH/TO/PROJECT with the actual path to the project directory (not the package directory).
-{
-  "mcpServers": {
-    "greenroom": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/ABSOLUTE/PATH/TO/PROJECT",
-        "run",
-        "python",
-        "src/greenroom/server.py"
-      ]
+1. Download Claude Desktop app [here](https://claude.com/download).
+
+2. Open the claude desktop app.
+
+3. Confirm the desktop app is connected to the greenroom server:
+   - Navigate to Settings.
+   - Click on "Developer". Local MCP Servers should appear.
+   - The greenroom server should be listed there and it should have status: running.
+   - If it is not running, click on 'Edit Config'. Then follow the instructions in the Troubleshooting section below.
+
+### Troubleshooting
+
+  **Confirm correctness of local claude settings / configuration.**
+
+  When you run the set up command (`claude mcp add`), a configuration for that MCP server is added to your local claude settings.
+  Claude stores them in a file called `claude_desktop_config.json`.
+  These settings are what will be used by the claude desktop app to connect to the MCP server.
+
+  - Align your local configuration with the below.
+  - Replace `/ABSOLUTE/PATH/TO/PROJECT` with the actual path to the project directory (not the package directory) on your local machine.
+  - Replace `/ABSOLUTE/PATH/TO/UV/LIBRARY` with the actual path to uv on your local machine.
+
+  ```json
+  {
+    "mcpServers": {
+      "greenroom": {
+        "command": "/ABSOLUTE/PATH/TO/UV/LIBRARY",
+        "args": [
+          "--directory",
+          "/ABSOLUTE/PATH/TO/PROJECT",
+          "run",
+          "python",
+          "src/greenroom/server.py"
+        ]
+      }
     }
   }
-}
-```
+  ```
 
-Remove the server from claude settings on local machine.
-This might be useful if the configuration is not correct. Removing the server and then re-adding the server might be good way to resolve configuration issues.
-```
+  **When experiencing configuration issues**, sometimes it helps to remove the mcp server from your local machine and add it back again.
+  ```
+  # remove the local configuration
   claude mcp remove greenroom
-```
+
+  # update the local configuration and run the MCP server
+  claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+  ```
 
 ## How It Works
 
