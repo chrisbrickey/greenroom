@@ -3,6 +3,12 @@
 A python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
 This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
 
+#### Discover films and television using hybrid human-AI curation  
+![discover_media](docs/images/discovery-duo.png)
+
+#### Compare outputs of multiple agents and models
+![compare LLM responses](docs/images/compare-llms-duo.png)
+
 ## Use the tools
 The greenroom MCP server can be used to answer a wide range of questions related to entertainment. 
 Below are some example prompts that will trigger the use of multiple MCP tools, but these are just examples.
@@ -25,7 +31,7 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 
 ### Compare the output of multiple agents
 - `Using compare_llm_responses, what makes a great science fiction film?`
-- `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?` 
+- `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?`
 
 ## Features
 
