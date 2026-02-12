@@ -1,7 +1,7 @@
 # greenroom
 
-A python package containing an MCP (Model Context Protocol) server that provides entertainment recommender utilities to agents. 
-This server integrates with [TMDB](www.themoviedb.org), a free and community-driven database of entertainment content.
+A python package containing an MCP server that coordinates LLM agents and integrates with 
+external services to provide hybrid human-AI curated entertainment recommendations.
 
 #### Discover films and television using hybrid human-AI curation  
 ![discover_media](docs/images/discovery-duo.png)
@@ -126,7 +126,7 @@ greenroom/                          # project root
 - **FastMCP >=2.13.0** - MCP server framework; requires Python 3.10+
 - **uv** -  package manager; [installation instructions](https://github.com/astral-sh/uv#installation)
 - **Hatchling** - build system
-- **httpx** - for API calls to TMDB
+- **httpx** - for API calls to TMDB (community-driven database)
 - **python-dotenv** - for API key management
 - **Ollama** (optional) - local LLM runtime for multi-agent tools like compare_llm_responses; [installation instructions](https://ollama.com/download)
 
@@ -146,7 +146,7 @@ uv sync
 ```
 
 2. Add TMDB api key as environment variable
-- Get a free API key at [TMDB](www.themoviedb.org) by creating an account, going to account settings, and navigating to the API section.
+- Get a free API key at [TMDB](https://www.themoviedb.org) by creating an account, going to account settings, and navigating to the API section.
 - Create a file called `.env` at the top level of the project. (This file is gitignored to prevent committing secrets.)
 - Copy the content of `.env.example` to your new file.
 - Replace `your_tmdb_api_key_here` in .env with the actual TMDB API key.
