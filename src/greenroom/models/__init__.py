@@ -11,6 +11,13 @@ from greenroom.models.media_types import (
     MEDIA_TYPE_MUSIC,
     MEDIA_TYPE_GAME,
 )
+from greenroom.models.responses import (
+    DiscoveryResultDict,
+    GenrePropertiesDict,
+    LLMComparisonResultDict,
+    LLMResponseEntryDict,
+    MediaResultDict,
+)
 
 __all__ = [
     "Media",
@@ -24,4 +31,9 @@ __all__ = [
     "MEDIA_TYPE_BOOK",
     "MEDIA_TYPE_MUSIC",
     "MEDIA_TYPE_GAME",
+    "DiscoveryResultDict",
+    "GenrePropertiesDict",
+    "LLMComparisonResultDict",
+    "LLMResponseEntryDict",
+    "MediaResultDict",
 ]

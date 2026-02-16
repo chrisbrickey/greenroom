@@ -1,7 +1,10 @@
 """Service layer that encapsulates provider-specific logic."""
 
+from __future__ import annotations
+
 from datetime import date
-from typing import Optional, List, Dict, Any
+from typing import Any
+
 from pydantic import ValidationError
 
 from greenroom.models.media import Media, MediaList
@@ -38,10 +41,10 @@ class TMDBService:
     def get_media(
         self,
         media_type: MediaType,
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
     ) -> MediaList:
@@ -97,10 +100,10 @@ class TMDBService:
     def _build_params(
         self,
         config: TMDBMediaConfig,
-        genre_id: Optional[int],
-        year: Optional[int],
-        language: Optional[str],
-        sort_by: Optional[str],
+        genre_id: int | None,
+        year: int | None,
+        language: str | None,
+        sort_by: str | None,
         page: int
     ) -> dict:
         """Build TMDB-specific query parameters.
@@ -179,7 +182,7 @@ class TMDBService:
             genre_ids=tmdb_item.genre_ids or []
         )
 
-    def _parse_date(self, date_str: Optional[str]) -> Optional[date]:
+    def _parse_date(self, date_str: str | None) -> date | None:
         """Parse TMDB date string to date object.
 
         Args:
@@ -220,7 +223,7 @@ class TMDBService:
         # Combine into unified GenreList
         return self._combine_genre_lists(film_genres, tv_genres)
 
-    def _parse_genres(self, raw_genres: List[Dict[str, Any]]) -> List[TMDBGenre]:
+    def _parse_genres(self, raw_genres: list[dict[str, Any]]) -> list[TMDBGenre]:
         """Parse TMDB genre response using Pydantic validation.
 
         Args:
@@ -240,8 +243,8 @@ class TMDBService:
 
     def _combine_genre_lists(
         self,
-        film_genres: List[TMDBGenre],
-        tv_genres: List[TMDBGenre]
+        film_genres: list[TMDBGenre],
+        tv_genres: list[TMDBGenre]
     ) -> GenreList:
         """Combine film and TV genre lists into a unified GenreList.
 
@@ -253,7 +256,7 @@ class TMDBService:
             GenreList with Genre objects including media type availability flags
         """
         # Build a map by genre name for deduplication
-        genres_map: Dict[str, Genre] = {}
+        genres_map: dict[str, Genre] = {}
 
         # Add film genres
         for tmdb_genre in film_genres:

@@ -1,7 +1,9 @@
 """Ollama API HTTP client."""
 
+from __future__ import annotations
+
 import os
-from typing import Dict, Any
+from typing import Any
 
 import httpx
 
@@ -21,7 +23,7 @@ class OllamaClient:
         model: str,
         temperature: float,
         max_tokens: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make a generate request to Ollama API.
 
         Args:

@@ -1,12 +1,14 @@
 """Media discovery tools for the greenroom MCP server."""
 
-from typing import Dict, Any, Optional
+from __future__ import annotations
+
 from fastmcp import FastMCP
 
+from greenroom.models.media import MediaList
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
+from greenroom.models.responses import DiscoveryResultDict
 from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
-from greenroom.models.media import MediaList
-from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 
 def register_discovery_tools(mcp: FastMCP) -> None:
@@ -16,13 +18,13 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def discover_films(
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
-    ) -> Dict[str, Any]:
+    ) -> DiscoveryResultDict:
         """
         Discovers films from based on optional filters like genre, release year,
         language, and sorting preferences. For now, defaults to TMDB service.
@@ -68,13 +70,13 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def discover_television(
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
-    ) -> Dict[str, Any]:
+    ) -> DiscoveryResultDict:
         """
         Discovers television shows based on optional filters like genre, first air year,
         language, and sorting preferences. For now, defaults to TMDB service.
@@ -124,13 +126,13 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
 def fetch_films(
     media_service: MediaService,
-    genre_id: Optional[int] = None,
-    year: Optional[int] = None,
-    language: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    genre_id: int | None = None,
+    year: int | None = None,
+    language: str | None = None,
+    sort_by: str | None = None,
     page: int = 1,
     max_results: int = 20,
-) -> Dict[str, Any]:
+) -> DiscoveryResultDict:
 
     # Validate parameters
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
@@ -151,13 +153,13 @@ def fetch_films(
 
 def fetch_television(
     media_service: MediaService,
-    genre_id: Optional[int] = None,
-    year: Optional[int] = None,
-    language: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    genre_id: int | None = None,
+    year: int | None = None,
+    language: str | None = None,
+    sort_by: str | None = None,
     page: int = 1,
     max_results: int = 20
-) -> Dict[str, Any]:
+) -> DiscoveryResultDict:
 
     # Validate parameters
     _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
@@ -177,12 +179,12 @@ def fetch_television(
     return _format_media_list(media_list, media_service)
 
 def _validate_discovery_params_internal(
-    media_type: str,
-    year: Optional[int],
+    media_type: MediaType,
+    year: int | None,
     page: int,
     max_results: int,
-    language: Optional[str],
-    sort_by: Optional[str]
+    language: str | None,
+    sort_by: str | None
 ) -> None:
     """Validate discovery parameters (internal version).
 
@@ -224,7 +226,7 @@ def _validate_discovery_params_internal(
             raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
 
 
-def _format_media_list(media_list: MediaList, media_service: MediaService) -> Dict[str, Any]:
+def _format_media_list(media_list: MediaList, media_service: MediaService) -> DiscoveryResultDict:
     """Format MediaList for agent consumption.
 
     Args:

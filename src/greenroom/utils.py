@@ -1,11 +1,11 @@
 """Utility helper functions for the greenroom MCP server."""
 
-from typing import Dict, List
+from __future__ import annotations
 
 from greenroom.config import Mood
 
 
-def create_empty_categorized_dict() -> Dict[str, List[str]]:
+def create_empty_categorized_dict() -> dict[str, list[str]]:
     """
     Create empty categorized dictionary structure for genre categorization.
 

@@ -1,9 +1,12 @@
 """TMDB API HTTP client."""
 
+from __future__ import annotations
+
 import json
 import os
+from typing import Any
+
 import httpx
-from typing import Dict, Any
 
 
 class TMDBClient:
@@ -29,7 +32,7 @@ class TMDBClient:
                 "Get your key from https://www.themoviedb.org/settings/api"
             )
 
-    def get(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make a GET request to TMDB API.
 
         Args:

@@ -1,13 +1,14 @@
 """Categorization tools for the greenroom MCP server."""
 
-from typing import Dict, Any, List
+from __future__ import annotations
 
 from fastmcp import FastMCP, Context
 
-from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood, GENRE_MOOD_MAP
-from greenroom.utils import create_empty_categorized_dict
+from greenroom.config import Mood, GENRE_MOOD_MAP
+from greenroom.models.responses import GenrePropertiesDict
 from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
+from greenroom.utils import create_empty_categorized_dict
 
 
 __all__ = ["register_genre_tools", "fetch_genres"]
@@ -19,7 +20,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     @mcp.tool()
-    def list_genres() -> Dict[str, Any]:
+    def list_genres() -> dict[str, GenrePropertiesDict]:
         """
         List all available entertainment genres across media types and providers.
 
@@ -63,7 +64,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
         return await simplify_genres(ctx, service)
 
     @mcp.tool()
-    async def categorize_genres(ctx: Context) -> Dict[str, List[str]]:
+    async def categorize_genres(ctx: Context) -> dict[str, list[str]]:
         """
         Categorize all available genres by mood/tone.
 
@@ -89,7 +90,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_genres(service: MediaService) -> Dict[str, Any]:
+def fetch_genres(service: MediaService) -> dict[str, GenrePropertiesDict]:
     """Fetch genres from the service and transform to dict format."""
 
     # Get genres from service
@@ -97,11 +98,11 @@ def fetch_genres(service: MediaService) -> Dict[str, Any]:
 
     # Transform to the expected dict format for backward compatibility
     return {
-        genre.name: {
-            GENRE_ID: genre.id,
-            HAS_FILMS: genre.has_films,
-            HAS_TV_SHOWS: genre.has_tv_shows
-        }
+        genre.name: GenrePropertiesDict(
+            id=genre.id,
+            has_films=genre.has_films,
+            has_tv_shows=genre.has_tv_shows
+        )
         for genre in genre_list.genres
     }
 
@@ -132,7 +133,7 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
         return ", ".join(sorted(genres.keys()))
 
 
-async def categorize_all_genres(ctx: Context, service: MediaService) -> Dict[str, List[str]]:
+async def categorize_all_genres(ctx: Context, service: MediaService) -> dict[str, list[str]]:
     """Encapsulates the genre categorization logic."""
 
     # Fetch all genres

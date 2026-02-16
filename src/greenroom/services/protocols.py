@@ -1,6 +1,9 @@
 """Base protocols for media services."""
 
-from typing import Optional, Protocol, runtime_checkable
+from __future__ import annotations
+
+from typing import Protocol, runtime_checkable
+
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MediaType
@@ -29,10 +32,10 @@ class MediaService(Protocol):
     def get_media(
         self,
         media_type: MediaType,
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
     ) -> MediaList:
