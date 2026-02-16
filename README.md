@@ -212,7 +212,7 @@ Running it directly would break the module resolution._
 
 ### Inspect using MCP Inspector (web ui)
 ```
-  npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
 ```
 
 ### Run tests
@@ -221,6 +221,9 @@ uv run python -m pytest
 
 # alternative to printout test names for quicker debugging
 uv run python -m pytest -v
+
+# type checking
+uv run mypy src/greenroom/
 ```
 
 ## Interacting with the MCP Server
