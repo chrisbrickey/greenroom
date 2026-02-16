@@ -46,7 +46,10 @@ class LLMService:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
-            return response.text
+
+            # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
+            # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
+            return response.text  # type: ignore[union-attr]
         except Exception as e:
             raise RuntimeError(f"Claude API error: {str(e)}") from e
 
@@ -75,4 +78,7 @@ class LLMService:
         """
 
         data = await self.client.generate(prompt, OLLAMA_DEFAULT_MODEL, temperature, max_tokens)
-        return data.get("response", "")
+
+        # data is a Dict whose values can be Any. Assigning to str before calling data.get() makes the type explicit.
+        result: str = data.get("response", "")
+        return result

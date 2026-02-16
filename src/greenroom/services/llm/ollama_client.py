@@ -55,7 +55,8 @@ class OllamaClient:
                 )
                 response.raise_for_status()
 
-                return response.json()
+                result: Dict[str, Any] = response.json()
+                return result
 
         except httpx.HTTPStatusError as e:
             raise RuntimeError(

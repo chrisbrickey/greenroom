@@ -120,7 +120,10 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
             temperature=0.0,  # Deterministic output
             max_tokens=500
         )
-        return response.text
+
+        # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
+        # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
+        return response.text  # type: ignore[union-attr]
 
     except Exception as e:
         # Catch broad exception because we don't know the specific exception type
@@ -166,7 +169,9 @@ async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
         )
 
         # Normalize and validate the response
-        mood = response.text.strip()
+        # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
+        # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
+        mood = response.text.strip()  # type: ignore[union-attr]
         if mood in [m.value for m in Mood]:
             return mood
 
