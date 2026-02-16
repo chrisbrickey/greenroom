@@ -84,19 +84,20 @@ async def compare_llms(
         return_exceptions=True
     )
 
-    return _format_responses(prompt, [("claude resample", resampled_result), ("ollama alternative", alternative_result)])
+    combined_responses = [("claude resample", resampled_result), ("ollama alternative", alternative_result)]
+    return _format_responses(prompt, combined_responses)
 
 
 def _format_responses(
     prompt: str,
-    labeled_responses: list[tuple[str, Union[str, Exception]]]
+    labeled_responses: list[tuple[str, Union[str, BaseException]]]
 ) -> Dict[str, Any]:
     """Format labeled LLM responses into a structured comparison result."""
 
     combined_response: Dict[str, Any] = { "prompt": prompt, "responses": [] }
 
     for label, response in labeled_responses:
-        if isinstance(response, Exception):
+        if isinstance(response, BaseException):
             entry = {"source": label, "text": None, "error": str(response), "length": 0}
         else:
             entry = {"source": label, "text": response, "error": None, "length": len(response)}

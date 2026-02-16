@@ -1,15 +1,15 @@
 """Media type constants and type definitions."""
 
-from typing import Literal
+from typing import Final, Literal
 
 # String constants for media types
 # These constants should be used instead of magic strings throughout the codebase
-MEDIA_TYPE_FILM = "film"
-MEDIA_TYPE_TELEVISION = "television"
-MEDIA_TYPE_PODCAST = "podcast"
-MEDIA_TYPE_BOOK = "book"
-MEDIA_TYPE_MUSIC = "music"
-MEDIA_TYPE_GAME = "game"
+MEDIA_TYPE_FILM: Final = "film"
+MEDIA_TYPE_TELEVISION: Final = "television"
+MEDIA_TYPE_PODCAST: Final = "podcast"
+MEDIA_TYPE_BOOK: Final = "book"
+MEDIA_TYPE_MUSIC: Final = "music"
+MEDIA_TYPE_GAME: Final = "game"
 
 
 # Literal type for type checking
