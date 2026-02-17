@@ -61,8 +61,8 @@ class TMDBService:
 
         Raises:
             ValueError: If media_type is not supported
-            RuntimeError: For TMDB API errors
-            ConnectionError: For network errors
+            APIResponseError: For TMDB API errors
+            APIConnectionError: For network errors
         """
         # Get media type configuration
         config = self.config_map.get(media_type)
@@ -206,8 +206,8 @@ class TMDBService:
             GenreList with standardized Genre objects including media type availability
 
         Raises:
-            RuntimeError: For TMDB API errors
-            ConnectionError: For network errors
+            APIResponseError: For TMDB API errors
+            APIConnectionError: For network errors
         """
         # Fetch genres for both films and TV shows
         film_data = self.client.get("/genre/movie/list", {})
