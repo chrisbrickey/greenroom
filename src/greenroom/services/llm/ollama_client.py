@@ -55,7 +55,9 @@ class OllamaClient:
                 )
                 response.raise_for_status()
 
-                result: Dict[str, Any] = response.json()
+                result = response.json()
+                if not isinstance(result, dict):
+                    raise RuntimeError(f"Ollama API returned unexpected type: {type(result)}")
                 return result
 
         except httpx.HTTPStatusError as e:
