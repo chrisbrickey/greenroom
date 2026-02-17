@@ -1,7 +1,11 @@
 # greenroom
 
-A python package containing an MCP server that coordinates LLM agents and integrates with 
-external services to provide hybrid human-AI curated entertainment recommendations.
+A python package containing an MCP server that coordinates outreach to multiple LLMs, 
+integrates with external content providers, and provides custom tooling to agents with the goal
+of producing high-value, hybrid human-AI curation of entertainment recommendations.
+
+As of 2026, greenroom provides recommendations on film and television content. I plan
+to integrate with additional data providers and LLM services to broaden the offering.
 
 #### Discover films and television using hybrid human-AI curation  
 ![discover_media](docs/images/discovery-duo.png)
@@ -60,7 +64,7 @@ You should see:
   Response lengths comparison
   Structured JSON output showing both LLM outputs side-by-side
 ```
-_*As of 2026, this defaults to comparing the response from a resampling of the anthropic client to a response from a new ollama client. 
+_As of 2026, this defaults to comparing the response from a resampling of the anthropic client to a response from a new ollama client. 
 Generally, the resampled response will be null because anthropic forbids resampling.
 I hope to broaden the capabilities to a wider selection of LLM clients soon._
 
