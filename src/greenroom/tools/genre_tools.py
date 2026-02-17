@@ -121,9 +121,9 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
             max_tokens=500
         )
 
-        # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
-        # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
-        return response.text  # type: ignore[union-attr]
+        if not hasattr(response, "text"):
+            raise RuntimeError(f"Sampling returned unexpected content type: {type(response)}")
+        return response.text
 
     except Exception as e:
         # Catch broad exception because we don't know the specific exception type
@@ -169,9 +169,9 @@ async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
         )
 
         # Normalize and validate the response
-        # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
-        # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
-        mood = response.text.strip()  # type: ignore[union-attr]
+        if not hasattr(response, "text"):
+            raise RuntimeError(f"Sampling returned unexpected content type: {type(response)}")
+        mood = response.text.strip()
         if mood in [m.value for m in Mood]:
             return mood
 

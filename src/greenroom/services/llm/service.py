@@ -47,9 +47,9 @@ class LLMService:
                 max_tokens=max_tokens
             )
 
-            # In this case, the response will always be TextContent, which has a .text attribute. So it's safe to
-            # suppress the type checker. Alternatively, ctx.sample() can return ImageContent or AudioContent.
-            return response.text  # type: ignore[union-attr]
+            if not hasattr(response, "text"):
+                raise RuntimeError(f"Claude API returned unexpected content type: {type(response)}")
+            return response.text
         except Exception as e:
             raise RuntimeError(f"Claude API error: {str(e)}") from e
 

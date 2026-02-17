@@ -56,7 +56,9 @@ class TMDBClient:
                 )
                 response.raise_for_status()
 
-            result: Dict[str, Any] = response.json()
+            result = response.json()
+            if not isinstance(result, dict):
+                raise RuntimeError(f"TMDB API returned unexpected type: {type(result)}")
             return result
 
         except httpx.HTTPStatusError as e:
