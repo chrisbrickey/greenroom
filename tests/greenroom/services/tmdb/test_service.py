@@ -4,6 +4,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
+from greenroom.exceptions import APIConnectionError, APIResponseError
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.services.tmdb.config import TMDB_FILM_CONFIG
 from greenroom.services.protocols import MediaService
@@ -320,8 +321,8 @@ def test_get_media_raises_value_error_for_unsupported_media_type(monkeypatch):
     assert "unsupported_type" in str(exc_info.value)
 
 
-def test_get_media_raises_runtime_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that RuntimeError is raised when TMDB API returns HTTP error."""
+def test_get_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIResponseError is raised when TMDB API returns HTTP error."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_response(
@@ -332,15 +333,15 @@ def test_get_media_raises_runtime_error_on_http_error(monkeypatch, httpx_mock: H
 
     service = TMDBService()
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(APIResponseError) as exc_info:
         service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "TMDB API error" in str(exc_info.value)
     assert "401" in str(exc_info.value)
 
 
-def test_get_media_raises_runtime_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that RuntimeError is raised when TMDB API returns invalid JSON."""
+def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIResponseError is raised when TMDB API returns invalid JSON."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_response(
@@ -350,14 +351,14 @@ def test_get_media_raises_runtime_error_on_invalid_json(monkeypatch, httpx_mock:
 
     service = TMDBService()
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(APIResponseError) as exc_info:
         service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "invalid JSON" in str(exc_info.value)
 
 
-def test_get_media_raises_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that ConnectionError is raised when unable to connect to TMDB API."""
+def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIConnectionError is raised when unable to connect to TMDB API."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_exception(
@@ -367,7 +368,7 @@ def test_get_media_raises_connection_error_on_request_failure(monkeypatch, httpx
 
     service = TMDBService()
 
-    with pytest.raises(ConnectionError) as exc_info:
+    with pytest.raises(APIConnectionError) as exc_info:
         service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "Failed to connect to TMDB API" in str(exc_info.value)
@@ -486,8 +487,8 @@ def test_get_genres_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     assert result.genres == []
 
 
-def test_get_genres_raises_runtime_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that RuntimeError is raised when TMDB API returns HTTP error."""
+def test_get_genres_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIResponseError is raised when TMDB API returns HTTP error."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_response(
@@ -498,15 +499,15 @@ def test_get_genres_raises_runtime_error_on_http_error(monkeypatch, httpx_mock: 
 
     service = TMDBService()
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(APIResponseError) as exc_info:
         service.get_genres()
 
     assert "TMDB API error" in str(exc_info.value)
     assert "401" in str(exc_info.value)
 
 
-def test_get_genres_raises_runtime_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that RuntimeError is raised when TMDB API returns invalid JSON."""
+def test_get_genres_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIResponseError is raised when TMDB API returns invalid JSON."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_response(
@@ -516,14 +517,14 @@ def test_get_genres_raises_runtime_error_on_invalid_json(monkeypatch, httpx_mock
 
     service = TMDBService()
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(APIResponseError) as exc_info:
         service.get_genres()
 
     assert "invalid JSON" in str(exc_info.value)
 
 
-def test_get_genres_raises_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that ConnectionError is raised when unable to connect to TMDB API."""
+def test_get_genres_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that APIConnectionError is raised when unable to connect to TMDB API."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     httpx_mock.add_exception(
@@ -533,7 +534,7 @@ def test_get_genres_raises_connection_error_on_request_failure(monkeypatch, http
 
     service = TMDBService()
 
-    with pytest.raises(ConnectionError) as exc_info:
+    with pytest.raises(APIConnectionError) as exc_info:
         service.get_genres()
 
     assert "Failed to connect to TMDB API" in str(exc_info.value)

@@ -35,8 +35,9 @@ class LLMClient(Protocol):
             Parsed JSON response as a dictionary
 
         Raises:
-            RuntimeError: If API returns an HTTP error
-            ConnectionError: If unable to connect to API
+            APITypeError: If response has unexpected Python type
+            APIResponseError: If API returns an HTTP error
+            APIConnectionError: If unable to connect to API
         """
         ...
 
@@ -56,8 +57,8 @@ class MediaService(Protocol):
             GenreList with standardized Genre objects including media type availability
 
         Raises:
-            RuntimeError: For service errors
-            ConnectionError: For network errors
+            APIResponseError: For service errors
+            APIConnectionError: For network errors
         """
         ...
 
@@ -87,8 +88,8 @@ class MediaService(Protocol):
 
         Raises:
             ValueError: For invalid parameters
-            RuntimeError: For service errors
-            ConnectionError: For network errors
+            APIResponseError: For service errors
+            APIConnectionError: For network errors
         """
         ...
 

@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastmcp import Context
 
+from greenroom.exceptions import GreenroomError, SamplingError
 from greenroom.services.llm.ollama_client import OllamaClient
 from greenroom.services.llm.config import OLLAMA_DEFAULT_MODEL
 from greenroom.services.protocols import LLMClient
@@ -42,7 +43,7 @@ class LLMService:
             response text
 
         Raises:
-            RuntimeError: Any error from ctx.sample()
+            SamplingError: Any error from ctx.sample()
         """
         try:
             response = await ctx.sample(
@@ -52,10 +53,12 @@ class LLMService:
             )
 
             if not hasattr(response, "text"):
-                raise RuntimeError(f"{self.SAMPLING_SOURCE} API returned unexpected content type: {type(response)}")
+                raise SamplingError(f"{self.SAMPLING_SOURCE} API returned unexpected content type: {type(response)}")
             return response.text
+        except GreenroomError:
+            raise
         except Exception as e:
-            raise RuntimeError(f"{self.SAMPLING_SOURCE} API error: {str(e)}") from e
+            raise SamplingError(f"{self.SAMPLING_SOURCE} API error: {str(e)}") from e
 
     async def generate_response_from_alternative_llm(
         self,
@@ -78,8 +81,8 @@ class LLMService:
             response text
 
         Raises:
-            RuntimeError: If API returns an error
-            ConnectionError: If unable to connect to API
+            APIResponseError: If API returns an error
+            APIConnectionError: If unable to connect to API
         """
 
         data = await self.client.generate(prompt, OLLAMA_DEFAULT_MODEL, temperature, max_tokens)

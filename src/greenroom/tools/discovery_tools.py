@@ -59,8 +59,8 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
         Raises:
             ValueError: If invalid parameters provided
-            RuntimeError: If service returns an error
-            ConnectionError: If unable to connect to service
+            APIResponseError: If service returns an error
+            APIConnectionError: If unable to connect to service
         """
 
         # Delegate to helper function to enable unit testing without FastMCP server setup
@@ -111,8 +111,8 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
         Raises:
             ValueError: If invalid parameters provided
-            RuntimeError: If service returns an error
-            ConnectionError: If unable to connect to service
+            APIResponseError: If service returns an error
+            APIConnectionError: If unable to connect to service
         """
 
         # Delegate to helper function to enable unit testing without FastMCP server setup

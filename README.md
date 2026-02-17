@@ -48,11 +48,9 @@ Tools for the greenroom server include:
 _NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is delegated to helpers methods, which are covered by the test suite._
 
 ### Coordination of Agents
-This server includes configuration and tools to use multiple agents to work on a single task. 
+This server supports the coordination of multiple agents to work on a single task. 
 
-- **compare_llm_responses** - Receives a prompt and fields it out to two agents (defaults to Claude and Ollama). It constrains the responses by temperature and token limit.
-
-#### How It Works
+- **compare_llm_responses** - Receives a prompt and fields it out to two agents. It constrains the responses by temperature and token limit.
 
 ```
 To trigger this tool, ask Claude: Using the compare_llm_reponses tool, why is the ocean blue?
@@ -62,8 +60,9 @@ You should see:
   Response lengths comparison
   Structured JSON output showing both LLM outputs side-by-side
 ```
-_*Generally, Claude's response in this case will be null because we are asking to resample the existing claude agent, which is not permitted by Anthropic._
-
+_*As of 2026, this defaults to comparing the response from a resampling of the anthropic client to a response from a new ollama client. 
+Generally, the resampled response will be null because anthropic forbids resampling.
+I hope to broaden the capabilities to a wider selection of LLM clients soon._
 
 ### Contexts
 Context-aware tools use FastMCP's `Context` parameter to access advanced MCP features like LLM sampling.
@@ -75,6 +74,17 @@ Example:
 These resources provide read-only data, analogous to GET requests. An agent reads the information but does not performa actions. 
 Resources are annotated with `@mcp.resource()` in the FastMCP framework.
 - **config://version** - Get server version
+
+### Error Handling
+All errors raised by the greenroom server use a custom exception hierarchy rooted in `GreenroomError`. 
+This means MCP callers can catch `GreenroomError` to handle any server-side failure, or catch a specific subclass for finer control:
+
+- **APIResponseError** - HTTP errors, invalid JSON, unexpected response bodies from external APIs
+- **APIConnectionError** - Network or connectivity failures when reaching external APIs
+- **APITypeError** - Response had an unexpected Python type after deserialization
+- **SamplingError** - Errors during LLL sampling
+
+Built-in exceptions like `ValueError` are still raised for input validation (e.g., invalid parameters).
 
 ## Architecture
 
