@@ -15,6 +15,8 @@ class OllamaClient:
     and error handling specific to the Ollama API.
     """
 
+    SERVICE_NAME = "Ollama"
+
     async def generate(
         self,
         prompt: str,
@@ -57,17 +59,17 @@ class OllamaClient:
 
                 result = response.json()
                 if not isinstance(result, dict):
-                    raise RuntimeError(f"Ollama API returned unexpected type: {type(result)}")
+                    raise RuntimeError(f"{self.SERVICE_NAME} API returned unexpected type: {type(result)}")
                 return result
 
         except httpx.HTTPStatusError as e:
             raise RuntimeError(
-                f"Ollama API error: {e.response.status_code} - {e.response.text}"
+                f"{self.SERVICE_NAME} API error: {e.response.status_code} - {e.response.text}"
             ) from e
         except httpx.RequestError as e:
             raise ConnectionError(
-                f"Failed to connect to Ollama API at {base_url}. "
-                f"Is the Ollama server running? Error: {str(e)}"
+                f"Failed to connect to {self.SERVICE_NAME} API at {base_url}. "
+                f"Is the {self.SERVICE_NAME} server running? Error: {str(e)}"
             ) from e
         except Exception as e:
-            raise RuntimeError(f"Ollama error: {str(e)}") from e
+            raise RuntimeError(f"{self.SERVICE_NAME} error: {str(e)}") from e

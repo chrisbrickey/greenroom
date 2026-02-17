@@ -28,8 +28,8 @@ class TMDBService:
         }
 
     def get_provider_name(self) -> str:
-        """Return the name of this provider: TMDB"""
-        return "TMDB"
+        """Return the name of this provider."""
+        return self.client.SERVICE_NAME
 
     # =============================================================================
     # Retrieve specific media

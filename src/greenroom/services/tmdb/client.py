@@ -14,6 +14,7 @@ class TMDBClient:
     """
 
     BASE_URL = "https://api.themoviedb.org/3"
+    SERVICE_NAME = "TMDB"
 
     def __init__(self):
         """Initialize the TMDB client.
@@ -58,18 +59,18 @@ class TMDBClient:
 
             result = response.json()
             if not isinstance(result, dict):
-                raise RuntimeError(f"TMDB API returned unexpected type: {type(result)}")
+                raise RuntimeError(f"{self.SERVICE_NAME} API returned unexpected type: {type(result)}")
             return result
 
         except httpx.HTTPStatusError as e:
             raise RuntimeError(
-                f"TMDB API error: {e.response.status_code} - {e.response.text}"
+                f"{self.SERVICE_NAME} API error: {e.response.status_code} - {e.response.text}"
             ) from e
         except httpx.RequestError as e:
             raise ConnectionError(
-                f"Failed to connect to TMDB API: {str(e)}"
+                f"Failed to connect to {self.SERVICE_NAME} API: {str(e)}"
             ) from e
         except json.JSONDecodeError as e:
             raise RuntimeError(
-                f"TMDB API returned invalid JSON: {str(e)}"
+                f"{self.SERVICE_NAME} API returned invalid JSON: {str(e)}"
             ) from e

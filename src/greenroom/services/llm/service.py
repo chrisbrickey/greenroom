@@ -1,9 +1,12 @@
 """Service layer for LLM interactions."""
 
+from typing import Optional
+
 from fastmcp import Context
 
 from greenroom.services.llm.ollama_client import OllamaClient
 from greenroom.services.llm.config import OLLAMA_DEFAULT_MODEL
+from greenroom.services.protocols import LLMClient
 
 
 class LLMService:
@@ -13,20 +16,21 @@ class LLMService:
     handling response extraction and error wrapping.
     """
 
-    def __init__(self):
-        """Initialize the LLM service."""
-        self.client = OllamaClient()
+    SAMPLING_SOURCE = "Claude"
 
-    async def generate_response_from_claude(
+    def __init__(self, client: Optional[LLMClient] = None):
+        """Initialize the LLM service."""
+        self.client: LLMClient = client or OllamaClient()
+
+    async def resample_current_llm(
         self,
         ctx: Context,
         prompt: str,
         temperature: float,
         max_tokens: int
     ) -> str:
-        """Call Claude using the ctx.sample() abstraction 
-        provided by the FastMCP framework, which is why
-        a Claude-specific client is unnecessary.
+        """Resample the current client's LLM using the ctx.sample()
+        abstraction provided by the FastMCP framework.
 
         Args:
             ctx: FastMCP context for LLM sampling
@@ -35,7 +39,7 @@ class LLMService:
             max_tokens: Maximum tokens to generate
 
         Returns:
-            Claude's response text
+            response text
 
         Raises:
             RuntimeError: Any error from ctx.sample()
@@ -48,21 +52,22 @@ class LLMService:
             )
 
             if not hasattr(response, "text"):
-                raise RuntimeError(f"Claude API returned unexpected content type: {type(response)}")
+                raise RuntimeError(f"{self.SAMPLING_SOURCE} API returned unexpected content type: {type(response)}")
             return response.text
         except Exception as e:
-            raise RuntimeError(f"Claude API error: {str(e)}") from e
+            raise RuntimeError(f"{self.SAMPLING_SOURCE} API error: {str(e)}") from e
 
-    async def generate_response_from_ollama(
+    async def generate_response_from_alternative_llm(
         self,
         prompt: str,
         temperature: float,
         max_tokens: int
     ) -> str:
-        """Call Ollama via the client.
+        """Call a different LLM client.
 
-        Delegates to OllamaClient.generate() and extracts the response text
-        from the raw API response dictionary.
+        As of 2026, this defaults to Ollama so
+        it delegates to OllamaClient.generate()
+        and extracts the response text.
 
         Args:
             prompt: The prompt to send
@@ -70,11 +75,11 @@ class LLMService:
             max_tokens: Maximum tokens to generate
 
         Returns:
-            Ollama's response text
+            response text
 
         Raises:
-            RuntimeError: If Ollama API returns an error
-            ConnectionError: If unable to connect to Ollama API
+            RuntimeError: If API returns an error
+            ConnectionError: If unable to connect to API
         """
 
         data = await self.client.generate(prompt, OLLAMA_DEFAULT_MODEL, temperature, max_tokens)
