@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 from fastmcp import FastMCP, Context
 
 from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood, GENRE_MOOD_MAP
+from greenroom.exceptions import SamplingError
 from greenroom.utils import create_empty_categorized_dict
 from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
@@ -122,7 +123,7 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
         )
 
         if not hasattr(response, "text"):
-            raise RuntimeError(f"Sampling returned unexpected content type: {type(response)}")
+            raise SamplingError(f"Sampling returned unexpected content type: {type(response)}")
         return response.text
 
     except Exception as e:
@@ -170,7 +171,7 @@ async def _categorize_single_genre(genre_name: str, ctx: Context) -> str:
 
         # Normalize and validate the response
         if not hasattr(response, "text"):
-            raise RuntimeError(f"Sampling returned unexpected content type: {type(response)}")
+            raise SamplingError(f"Sampling returned unexpected content type: {type(response)}")
         mood = response.text.strip()
         if mood in [m.value for m in Mood]:
             return mood

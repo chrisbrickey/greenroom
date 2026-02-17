@@ -2,8 +2,10 @@
 
 from fastmcp import Context
 
+from greenroom.exceptions import GreenroomError, SamplingError
 from greenroom.services.llm.ollama_client import OllamaClient
 from greenroom.services.llm.config import OLLAMA_DEFAULT_MODEL
+from greenroom.services.protocols import LLMClient
 
 
 class LLMService:
@@ -13,9 +15,11 @@ class LLMService:
     handling response extraction and error wrapping.
     """
 
+    SAMPLING_SOURCE = "Claude"
+
     def __init__(self):
         """Initialize the LLM service."""
-        self.client = OllamaClient()
+        self.client: LLMClient = OllamaClient()
 
     async def generate_response_from_claude(
         self,
@@ -38,7 +42,7 @@ class LLMService:
             Claude's response text
 
         Raises:
-            RuntimeError: Any error from ctx.sample()
+            SamplingError: Any error from ctx.sample()
         """
         try:
             response = await ctx.sample(
@@ -48,10 +52,12 @@ class LLMService:
             )
 
             if not hasattr(response, "text"):
-                raise RuntimeError(f"Claude API returned unexpected content type: {type(response)}")
+                raise SamplingError(f"{self.SAMPLING_SOURCE} API returned unexpected content type: {type(response)}")
             return response.text
+        except GreenroomError:
+            raise
         except Exception as e:
-            raise RuntimeError(f"Claude API error: {str(e)}") from e
+            raise SamplingError(f"{self.SAMPLING_SOURCE} API error: {str(e)}") from e
 
     async def generate_response_from_ollama(
         self,
@@ -73,8 +79,8 @@ class LLMService:
             Ollama's response text
 
         Raises:
-            RuntimeError: If Ollama API returns an error
-            ConnectionError: If unable to connect to Ollama API
+            APIResponseError: If Ollama API returns an error
+            APIConnectionError: If unable to connect to Ollama API
         """
 
         data = await self.client.generate(prompt, OLLAMA_DEFAULT_MODEL, temperature, max_tokens)

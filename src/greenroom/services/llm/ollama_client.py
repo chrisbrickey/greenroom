@@ -5,6 +5,7 @@ from typing import Dict, Any
 
 import httpx
 
+from greenroom.exceptions import APIConnectionError, APIResponseError, APITypeError, GreenroomError
 from greenroom.services.llm.config import OLLAMA_BASE_URL, OLLAMA_TIMEOUT
 
 
@@ -14,6 +15,8 @@ class OllamaClient:
     with the Ollama API, including request construction
     and error handling specific to the Ollama API.
     """
+
+    SERVICE_NAME = "Ollama"
 
     async def generate(
         self,
@@ -34,8 +37,9 @@ class OllamaClient:
             Parsed JSON response as a dictionary
 
         Raises:
-            RuntimeError: If Ollama API returns an HTTP error
-            ConnectionError: If unable to connect to Ollama API
+            APITypeError: If response has unexpected Python type
+            APIResponseError: If Ollama API returns an HTTP error
+            APIConnectionError: If unable to connect to Ollama API
         """
         base_url = os.getenv("OLLAMA_BASE_URL", OLLAMA_BASE_URL)
 
@@ -57,17 +61,19 @@ class OllamaClient:
 
                 result = response.json()
                 if not isinstance(result, dict):
-                    raise RuntimeError(f"Ollama API returned unexpected type: {type(result)}")
+                    raise APITypeError(f"{self.SERVICE_NAME} API returned unexpected type: {type(result)}")
                 return result
 
         except httpx.HTTPStatusError as e:
-            raise RuntimeError(
-                f"Ollama API error: {e.response.status_code} - {e.response.text}"
+            raise APIResponseError(
+                f"{self.SERVICE_NAME} API error: {e.response.status_code} - {e.response.text}"
             ) from e
         except httpx.RequestError as e:
-            raise ConnectionError(
-                f"Failed to connect to Ollama API at {base_url}. "
-                f"Is the Ollama server running? Error: {str(e)}"
+            raise APIConnectionError(
+                f"Failed to connect to {self.SERVICE_NAME} API at {base_url}. "
+                f"Is the {self.SERVICE_NAME} server running? Error: {str(e)}"
             ) from e
+        except GreenroomError:
+            raise
         except Exception as e:
-            raise RuntimeError(f"Ollama error: {str(e)}") from e
+            raise APIResponseError(f"{self.SERVICE_NAME} error: {str(e)}") from e

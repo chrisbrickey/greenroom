@@ -5,6 +5,8 @@ import os
 import httpx
 from typing import Dict, Any
 
+from greenroom.exceptions import APIConnectionError, APIResponseError, APITypeError
+
 
 class TMDBClient:
     """HTTP client for interacting with The Movie Database (TMDB) API.
@@ -13,6 +15,7 @@ class TMDBClient:
     to the TMDB API.
     """
 
+    SERVICE_NAME = "TMDB"
     BASE_URL = "https://api.themoviedb.org/3"
 
     def __init__(self):
@@ -40,8 +43,9 @@ class TMDBClient:
             Parsed JSON response as a dictionary
 
         Raises:
-            RuntimeError: If TMDB API returns an HTTP error or invalid JSON
-            ConnectionError: If unable to connect to TMDB API
+            APITypeError: If response has unexpected Python type
+            APIResponseError: If TMDB API returns an HTTP error or invalid JSON
+            APIConnectionError: If unable to connect to TMDB API
         """
         # Add API key to parameters
         params["api_key"] = self.api_key
@@ -58,18 +62,18 @@ class TMDBClient:
 
             result = response.json()
             if not isinstance(result, dict):
-                raise RuntimeError(f"TMDB API returned unexpected type: {type(result)}")
+                raise APITypeError(f"{self.SERVICE_NAME} API returned unexpected type: {type(result)}")
             return result
 
         except httpx.HTTPStatusError as e:
-            raise RuntimeError(
-                f"TMDB API error: {e.response.status_code} - {e.response.text}"
+            raise APIResponseError(
+                f"{self.SERVICE_NAME} API error: {e.response.status_code} - {e.response.text}"
             ) from e
         except httpx.RequestError as e:
-            raise ConnectionError(
-                f"Failed to connect to TMDB API: {str(e)}"
+            raise APIConnectionError(
+                f"Failed to connect to {self.SERVICE_NAME} API: {str(e)}"
             ) from e
         except json.JSONDecodeError as e:
-            raise RuntimeError(
-                f"TMDB API returned invalid JSON: {str(e)}"
+            raise APIResponseError(
+                f"{self.SERVICE_NAME} API returned invalid JSON: {str(e)}"
             ) from e
