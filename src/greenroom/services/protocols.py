@@ -1,9 +1,44 @@
-"""Base protocols for media services."""
+"""Base protocols for services."""
 
-from typing import Optional, Protocol, runtime_checkable
+from typing import Dict, Any, Optional, Protocol, runtime_checkable
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MediaType
+
+
+@runtime_checkable
+class LLMClient(Protocol):
+    """Protocol defining the interface for LLM API clients.
+
+    Any LLM provider (Ollama, Groq, etc.) must implement this interface
+    to be compatible with LLMService.
+    """
+
+    SERVICE_NAME: str
+
+    async def generate(
+        self,
+        prompt: str,
+        model: str,
+        temperature: float,
+        max_tokens: int
+    ) -> Dict[str, Any]:
+        """Make a generation request to the LLM API.
+
+        Args:
+            prompt: The prompt to send
+            model: Model name/identifier
+            temperature: Temperature setting
+            max_tokens: Maximum tokens to generate
+
+        Returns:
+            Parsed JSON response as a dictionary
+
+        Raises:
+            RuntimeError: If API returns an HTTP error
+            ConnectionError: If unable to connect to API
+        """
+        ...
 
 
 @runtime_checkable

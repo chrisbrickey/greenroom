@@ -62,8 +62,8 @@ async def test_compare_llms_accepts_boundary_temperature():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(return_value="response")
-    mock_service.generate_response_from_ollama = AsyncMock(return_value="response")
+    mock_service.resample_current_llm = AsyncMock(return_value="response")
+    mock_service.generate_response_from_alternative_llm = AsyncMock(return_value="response")
 
     result = await compare_llms(mock_service, mock_ctx, "Test", temperature=0)
     assert result["prompt"] == "Test"
@@ -78,8 +78,8 @@ async def test_compare_llms_accepts_boundary_max_tokens():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(return_value="response")
-    mock_service.generate_response_from_ollama = AsyncMock(return_value="response")
+    mock_service.resample_current_llm = AsyncMock(return_value="response")
+    mock_service.generate_response_from_alternative_llm = AsyncMock(return_value="response")
 
     result = await compare_llms(mock_service, mock_ctx, "Test", max_tokens=1)
     assert result["prompt"] == "Test"
@@ -94,10 +94,10 @@ async def test_compare_llms_both_succeed():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(
+    mock_service.resample_current_llm = AsyncMock(
         return_value="Claude says: The sky is blue due to Rayleigh scattering."
     )
-    mock_service.generate_response_from_ollama = AsyncMock(
+    mock_service.generate_response_from_alternative_llm = AsyncMock(
         return_value="Ollama says: Light scattering causes the blue sky."
     )
 
@@ -132,12 +132,12 @@ async def test_compare_llms_both_succeed():
     assert alt_resp["length"] == len("Ollama says: Light scattering causes the blue sky.")
 
     # Verify Claude was called via service with correct parameters
-    mock_service.generate_response_from_claude.assert_called_once_with(
+    mock_service.resample_current_llm.assert_called_once_with(
         mock_ctx, "Why is the sky blue?", 0.7, 100
     )
 
     # Verify Ollama was called via service with correct parameters
-    mock_service.generate_response_from_ollama.assert_called_once_with(
+    mock_service.generate_response_from_alternative_llm.assert_called_once_with(
         "Why is the sky blue?", 0.7, 100
     )
 
@@ -148,17 +148,17 @@ async def test_compare_llms_uses_default_params():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(return_value="Claude response")
-    mock_service.generate_response_from_ollama = AsyncMock(return_value="Ollama response")
+    mock_service.resample_current_llm = AsyncMock(return_value="Claude response")
+    mock_service.generate_response_from_alternative_llm = AsyncMock(return_value="Ollama response")
 
     # Call without specifying temperature or max_tokens
     result = await compare_llms(mock_service, mock_ctx, "Test prompt")
 
     # Verify service was called with default params
-    mock_service.generate_response_from_claude.assert_called_once_with(
+    mock_service.resample_current_llm.assert_called_once_with(
         mock_ctx, "Test prompt", 0.7, 500
     )
-    mock_service.generate_response_from_ollama.assert_called_once_with(
+    mock_service.generate_response_from_alternative_llm.assert_called_once_with(
         "Test prompt", 0.7, 500
     )
 
@@ -172,10 +172,10 @@ async def test_compare_llms_claude_fails_ollama_succeeds():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(
+    mock_service.resample_current_llm = AsyncMock(
         side_effect=RuntimeError("Claude API error: Sample failed")
     )
-    mock_service.generate_response_from_ollama = AsyncMock(return_value="Ollama response")
+    mock_service.generate_response_from_alternative_llm = AsyncMock(return_value="Ollama response")
 
     result = await compare_llms(mock_service, mock_ctx, "Test prompt")
 
@@ -199,8 +199,8 @@ async def test_compare_llms_ollama_fails_claude_succeeds():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(return_value="Claude response")
-    mock_service.generate_response_from_ollama = AsyncMock(
+    mock_service.resample_current_llm = AsyncMock(return_value="Claude response")
+    mock_service.generate_response_from_alternative_llm = AsyncMock(
         side_effect=RuntimeError("Ollama API error: 500 - Internal server error")
     )
 
@@ -226,10 +226,10 @@ async def test_compare_llms_both_fail():
     mock_ctx = MagicMock(spec=Context)
 
     mock_service = MagicMock(spec=LLMService)
-    mock_service.generate_response_from_claude = AsyncMock(
+    mock_service.resample_current_llm = AsyncMock(
         side_effect=ConnectionError("Claude connection failed")
     )
-    mock_service.generate_response_from_ollama = AsyncMock(
+    mock_service.generate_response_from_alternative_llm = AsyncMock(
         side_effect=ValueError("Ollama invalid value")
     )
 

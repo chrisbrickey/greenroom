@@ -79,8 +79,8 @@ async def compare_llms(
 
     # Call multiple LLMs in parallel
     resampled_result, alternative_result = await asyncio.gather(
-        llm_service.generate_response_from_claude(ctx, prompt, temperature, max_tokens),
-        llm_service.generate_response_from_ollama(prompt, temperature, max_tokens),
+        llm_service.resample_current_llm(ctx, prompt, temperature, max_tokens),
+        llm_service.generate_response_from_alternative_llm(prompt, temperature, max_tokens),
         return_exceptions=True
     )
 

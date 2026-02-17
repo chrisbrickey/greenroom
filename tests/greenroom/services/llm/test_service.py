@@ -16,7 +16,7 @@ async def test_generate_response_from_claude_success():
     mock_ctx.sample = AsyncMock(return_value=mock_response)
 
     service = LLMService()
-    result = await service.generate_response_from_claude(mock_ctx, "Test prompt", 0.5, 200)
+    result = await service.resample_current_llm(mock_ctx, "Test prompt", 0.5, 200)
 
     assert result == "Claude's response"
     mock_ctx.sample.assert_called_once_with(
@@ -34,7 +34,7 @@ async def test_generate_response_from_claude_handles_errors():
 
     service = LLMService()
     with pytest.raises(RuntimeError, match="Claude API error: Sample failed"):
-        await service.generate_response_from_claude(mock_ctx, "Test", 0.7, 100)
+        await service.resample_current_llm(mock_ctx, "Test", 0.7, 100)
 
 
 @pytest.mark.asyncio
@@ -45,7 +45,7 @@ async def test_generate_response_from_ollama_success():
         return_value={"response": "Ollama's response", "done": True}
     )
 
-    result = await service.generate_response_from_ollama("Test prompt", 0.5, 200)
+    result = await service.generate_response_from_alternative_llm("Test prompt", 0.5, 200)
 
     assert result == "Ollama's response"
     service.client.generate.assert_called_once_with(
@@ -59,7 +59,7 @@ async def test_generate_response_from_ollama_empty_response():
     service = LLMService()
     service.client.generate = AsyncMock(return_value={"done": True})
 
-    result = await service.generate_response_from_ollama("Test", 0.7, 100)
+    result = await service.generate_response_from_alternative_llm("Test", 0.7, 100)
 
     assert result == ""
 
@@ -73,7 +73,7 @@ async def test_generate_response_from_ollama_propagates_runtime_error():
     )
 
     with pytest.raises(RuntimeError, match="Ollama API error"):
-        await service.generate_response_from_ollama("Test", 0.7, 100)
+        await service.generate_response_from_alternative_llm("Test", 0.7, 100)
 
 
 @pytest.mark.asyncio
@@ -85,4 +85,4 @@ async def test_generate_response_from_ollama_propagates_connection_error():
     )
 
     with pytest.raises(ConnectionError, match="Failed to connect to Ollama API"):
-        await service.generate_response_from_ollama("Test", 0.7, 100)
+        await service.generate_response_from_alternative_llm("Test", 0.7, 100)
