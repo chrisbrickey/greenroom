@@ -236,7 +236,7 @@ uv run python -m pytest
 # alternative to printout test names for quicker debugging
 uv run python -m pytest -v
 
-# type checking
+# only run static type checker
 uv run mypy src/greenroom/
 ```
 
