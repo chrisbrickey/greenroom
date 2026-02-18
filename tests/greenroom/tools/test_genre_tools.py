@@ -10,7 +10,7 @@ from greenroom.tools.genre_tools import (
     categorize_all_genres,
 )
 from greenroom.models.genre import Genre, GenreList
-from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood
+from greenroom.config import Mood
 
 
 # =============================================================================
@@ -64,8 +64,8 @@ def test_fetch_genres_returns_empty_dict_for_empty_genre_list():
     mock_service.get_genres.assert_called_once()
 
 
-def test_fetch_genres_uses_config_constants_for_keys():
-    """Test fetch_genres uses config constants for dict keys, not hardcoded strings."""
+def test_fetch_genres_uses_expected_keys():
+    """Test fetch_genres uses expected string keys in genre property dicts."""
     mock_service = MagicMock()
     mock_service.get_genres.return_value = GenreList(genres=[
         Genre(id=99, name="Documentary", has_films=True, has_tv_shows=True),
@@ -73,16 +73,16 @@ def test_fetch_genres_uses_config_constants_for_keys():
 
     result = fetch_genres(mock_service)
 
-    # Verify the keys match the config constants
+    # Verify the keys match expected strings
     doc_props = result["Documentary"]
-    assert GENRE_ID in doc_props
-    assert HAS_FILMS in doc_props
-    assert HAS_TV_SHOWS in doc_props
+    assert "id" in doc_props
+    assert "has_films" in doc_props
+    assert "has_tv_shows" in doc_props
 
     # Verify the values are correct
-    assert doc_props[GENRE_ID] == 99
-    assert doc_props[HAS_FILMS] is True
-    assert doc_props[HAS_TV_SHOWS] is True
+    assert doc_props["id"] == 99
+    assert doc_props["has_films"] is True
+    assert doc_props["has_tv_shows"] is True
 
 
 # =============================================================================

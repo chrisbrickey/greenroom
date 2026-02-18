@@ -1,8 +1,9 @@
 """Media discovery tools for the greenroom MCP server."""
 
-from typing import Dict, Any, Optional
+from typing import Optional
 from fastmcp import FastMCP
 
+from greenroom.models.responses import DiscoveryResultDict
 from greenroom.services.protocols import MediaService
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media import MediaList
@@ -22,7 +23,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         sort_by: Optional[str] = None,
         page: int = 1,
         max_results: int = 20
-    ) -> Dict[str, Any]:
+    ) -> DiscoveryResultDict:
         """
         Discovers films from based on optional filters like genre, release year,
         language, and sorting preferences. For now, defaults to TMDB service.
@@ -74,7 +75,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         sort_by: Optional[str] = None,
         page: int = 1,
         max_results: int = 20
-    ) -> Dict[str, Any]:
+    ) -> DiscoveryResultDict:
         """
         Discovers television shows based on optional filters like genre, first air year,
         language, and sorting preferences. For now, defaults to TMDB service.
@@ -130,7 +131,7 @@ def fetch_films(
     sort_by: Optional[str] = None,
     page: int = 1,
     max_results: int = 20,
-) -> Dict[str, Any]:
+) -> DiscoveryResultDict:
 
     # Validate parameters
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
@@ -157,7 +158,7 @@ def fetch_television(
     sort_by: Optional[str] = None,
     page: int = 1,
     max_results: int = 20
-) -> Dict[str, Any]:
+) -> DiscoveryResultDict:
 
     # Validate parameters
     _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
@@ -224,7 +225,7 @@ def _validate_discovery_params_internal(
             raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
 
 
-def _format_media_list(media_list: MediaList, media_service: MediaService) -> Dict[str, Any]:
+def _format_media_list(media_list: MediaList, media_service: MediaService) -> DiscoveryResultDict:
     """Format MediaList for agent consumption.
 
     Args:
