@@ -1,7 +1,6 @@
 """Provider-agnostic genre data models."""
 
 from dataclasses import dataclass, field
-from typing import List
 
 
 @dataclass
@@ -23,4 +22,4 @@ class GenreList:
 
     Represents a collection of genres with media type availability.
     """
-    genres: List[Genre] = field(default_factory=list)
+    genres: list[Genre] = field(default_factory=list)

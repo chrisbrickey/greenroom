@@ -1,7 +1,5 @@
 """Service layer for LLM interactions."""
 
-from typing import Optional
-
 from fastmcp import Context
 
 from greenroom.exceptions import GreenroomError, SamplingError
@@ -19,7 +17,7 @@ class LLMService:
 
     SAMPLING_SOURCE = "Claude"
 
-    def __init__(self, client: Optional[LLMClient] = None):
+    def __init__(self, client: LLMClient | None = None):
         """Initialize the LLM service."""
         self.client: LLMClient = client or OllamaClient()
 

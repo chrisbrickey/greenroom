@@ -1,7 +1,5 @@
 """Categorization tools for the greenroom MCP server."""
 
-from typing import Dict, List
-
 from fastmcp import FastMCP, Context
 
 from greenroom.config import Mood, GENRE_MOOD_MAP
@@ -21,7 +19,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     @mcp.tool()
-    def list_genres() -> Dict[str, GenrePropertiesDict]:
+    def list_genres() -> dict[str, GenrePropertiesDict]:
         """
         List all available entertainment genres across media types and providers.
 
@@ -65,7 +63,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
         return await simplify_genres(ctx, service)
 
     @mcp.tool()
-    async def categorize_genres(ctx: Context) -> Dict[str, List[str]]:
+    async def categorize_genres(ctx: Context) -> dict[str, list[str]]:
         """
         Categorize all available genres by mood/tone.
 
@@ -91,7 +89,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_genres(service: MediaService) -> Dict[str, GenrePropertiesDict]:
+def fetch_genres(service: MediaService) -> dict[str, GenrePropertiesDict]:
     """Fetch genres from the service and transform to dict format."""
 
     # Get genres from service
@@ -134,7 +132,7 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
         return ", ".join(sorted(genres.keys()))
 
 
-async def categorize_all_genres(ctx: Context, service: MediaService) -> Dict[str, List[str]]:
+async def categorize_all_genres(ctx: Context, service: MediaService) -> dict[str, list[str]]:
     """Encapsulates the genre categorization logic."""
 
     # Fetch all genres

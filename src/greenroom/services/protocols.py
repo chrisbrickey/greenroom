@@ -1,6 +1,6 @@
 """Base protocols for services."""
 
-from typing import Dict, Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MediaType
@@ -22,7 +22,7 @@ class LLMClient(Protocol):
         model: str,
         temperature: float,
         max_tokens: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make a generation request to the LLM API.
 
         Args:
@@ -65,10 +65,10 @@ class MediaService(Protocol):
     def get_media(
         self,
         media_type: MediaType,
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
     ) -> MediaList:

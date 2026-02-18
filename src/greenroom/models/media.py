@@ -1,7 +1,8 @@
 """Provider-agnostic media data models."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional, List
 from datetime import date
 
 from greenroom.models.media_types import MediaType
@@ -17,10 +18,10 @@ class Media:
     id: str                                 # Generic ID (could be int/string depending on provider)
     media_type: MediaType                   # Type-safe media type
     title: str                              # Normalized title field
-    date: Optional[date] = None             # Normalized date field (release/air date)
-    rating: Optional[float] = None          # Normalized rating (0-10 scale)
-    description: Optional[str] = None       # Overview/synopsis
-    genre_ids: Optional[List[int]] = None   # List of genre IDs
+    date: date | None = None             # Normalized date field (release/air date)
+    rating: float | None = None          # Normalized rating (0-10 scale)
+    description: str | None = None       # Overview/synopsis
+    genre_ids: list[int] | None = None   # List of genre IDs
 
 
 @dataclass
@@ -29,7 +30,7 @@ class MediaList:
 
     Represents a page of media results with pagination metadata.
     """
-    results: List[Media]
+    results: list[Media]
     total_results: int
     page: int
     total_pages: int

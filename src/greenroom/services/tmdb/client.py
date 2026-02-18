@@ -3,7 +3,7 @@
 import json
 import os
 import httpx
-from typing import Dict, Any
+from typing import Any
 
 from greenroom.exceptions import APIConnectionError, APIResponseError, APITypeError
 
@@ -32,7 +32,7 @@ class TMDBClient:
                 "Get your key from https://www.themoviedb.org/settings/api"
             )
 
-    def get(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make a GET request to TMDB API.
 
         Args:

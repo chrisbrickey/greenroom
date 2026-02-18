@@ -1,6 +1,5 @@
 """Media discovery tools for the greenroom MCP server."""
 
-from typing import Optional
 from fastmcp import FastMCP
 
 from greenroom.models.responses import DiscoveryResultDict
@@ -17,10 +16,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def discover_films(
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
     ) -> DiscoveryResultDict:
@@ -69,10 +68,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def discover_television(
-        genre_id: Optional[int] = None,
-        year: Optional[int] = None,
-        language: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        genre_id: int | None = None,
+        year: int | None = None,
+        language: str | None = None,
+        sort_by: str | None = None,
         page: int = 1,
         max_results: int = 20
     ) -> DiscoveryResultDict:
@@ -125,10 +124,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
 
 def fetch_films(
     media_service: MediaService,
-    genre_id: Optional[int] = None,
-    year: Optional[int] = None,
-    language: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    genre_id: int | None = None,
+    year: int | None = None,
+    language: str | None = None,
+    sort_by: str | None = None,
     page: int = 1,
     max_results: int = 20,
 ) -> DiscoveryResultDict:
@@ -152,10 +151,10 @@ def fetch_films(
 
 def fetch_television(
     media_service: MediaService,
-    genre_id: Optional[int] = None,
-    year: Optional[int] = None,
-    language: Optional[str] = None,
-    sort_by: Optional[str] = None,
+    genre_id: int | None = None,
+    year: int | None = None,
+    language: str | None = None,
+    sort_by: str | None = None,
     page: int = 1,
     max_results: int = 20
 ) -> DiscoveryResultDict:
@@ -179,11 +178,11 @@ def fetch_television(
 
 def _validate_discovery_params_internal(
     media_type: str,
-    year: Optional[int],
+    year: int | None,
     page: int,
     max_results: int,
-    language: Optional[str],
-    sort_by: Optional[str]
+    language: str | None,
+    sort_by: str | None
 ) -> None:
     """Validate discovery parameters (internal version).
 
