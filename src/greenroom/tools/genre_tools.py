@@ -1,10 +1,11 @@
 """Categorization tools for the greenroom MCP server."""
 
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from fastmcp import FastMCP, Context
 
-from greenroom.config import GENRE_ID, HAS_FILMS, HAS_TV_SHOWS, Mood, GENRE_MOOD_MAP
+from greenroom.config import Mood, GENRE_MOOD_MAP
+from greenroom.models.responses import GenrePropertiesDict
 from greenroom.exceptions import SamplingError
 from greenroom.utils import create_empty_categorized_dict
 from greenroom.services.protocols import MediaService
@@ -20,7 +21,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     @mcp.tool()
-    def list_genres() -> Dict[str, Any]:
+    def list_genres() -> Dict[str, GenrePropertiesDict]:
         """
         List all available entertainment genres across media types and providers.
 
@@ -90,7 +91,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_genres(service: MediaService) -> Dict[str, Any]:
+def fetch_genres(service: MediaService) -> Dict[str, GenrePropertiesDict]:
     """Fetch genres from the service and transform to dict format."""
 
     # Get genres from service
@@ -99,9 +100,9 @@ def fetch_genres(service: MediaService) -> Dict[str, Any]:
     # Transform to the expected dict format for backward compatibility
     return {
         genre.name: {
-            GENRE_ID: genre.id,
-            HAS_FILMS: genre.has_films,
-            HAS_TV_SHOWS: genre.has_tv_shows
+            "id": genre.id,
+            "has_films": genre.has_films,
+            "has_tv_shows": genre.has_tv_shows
         }
         for genre in genre_list.genres
     }

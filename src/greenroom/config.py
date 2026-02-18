@@ -7,19 +7,6 @@ and mood mapping. Modify these values to customize genre categorization behavior
 from enum import Enum
 from typing import Dict, List
 
-# =============================================================================
-# Genre Property Keys
-# =============================================================================
-
-GENRE_ID = "id"
-"""Key for the TMDB genre ID in the genre properties dictionary."""
-
-HAS_FILMS = "has_films"
-"""Key indicating whether a genre is available for films."""
-
-HAS_TV_SHOWS = "has_tv_shows"
-"""Key indicating whether a genre is available for TV shows."""
-
 
 # =============================================================================
 # Mood Category Enum

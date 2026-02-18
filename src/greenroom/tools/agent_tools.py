@@ -1,7 +1,9 @@
 """Agent comparison tools for the greenroom MCP server."""
 
 import asyncio
-from typing import Dict, Any, Optional, Union
+from typing import Union
+
+from greenroom.models.responses import LLMComparisonResultDict, LLMResponseEntryDict
 
 from fastmcp import FastMCP, Context
 
@@ -19,7 +21,7 @@ def register_agent_tools(mcp: FastMCP) -> None:
         prompt: str,
         temperature: float = 0.7,
         max_tokens: int = 500
-    ) -> Dict[str, Any]:
+    ) -> LLMComparisonResultDict:
         """
         Compare how multiple agents respond to the same prompt.
 
@@ -65,7 +67,7 @@ async def compare_llms(
     prompt: str,
     temperature: float = 0.7,
     max_tokens: int = 500
-) -> Dict[str, Any]:
+) -> LLMComparisonResultDict:
 
     # Validate inputs
     if not prompt or not prompt.strip():
@@ -91,14 +93,14 @@ async def compare_llms(
 def _format_responses(
     prompt: str,
     labeled_responses: list[tuple[str, Union[str, BaseException]]]
-) -> Dict[str, Any]:
+) -> LLMComparisonResultDict:
     """Format labeled LLM responses into a structured comparison result."""
 
-    combined_response: Dict[str, Any] = { "prompt": prompt, "responses": [] }
+    combined_response: LLMComparisonResultDict = { "prompt": prompt, "responses": [] }
 
     for label, response in labeled_responses:
         if isinstance(response, BaseException):
-            entry = {"source": label, "text": None, "error": str(response), "length": 0}
+            entry: LLMResponseEntryDict = {"source": label, "text": None, "error": str(response), "length": 0}
         else:
             entry = {"source": label, "text": response, "error": None, "length": len(response)}
 
