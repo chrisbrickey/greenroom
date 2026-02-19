@@ -1,20 +1,20 @@
 """TypedDict definitions for tool return types."""
 
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 
 class MediaResultDict(TypedDict):
     id: str
     media_type: str
     title: str
-    date: Optional[str]
-    rating: Optional[float]
-    description: Optional[str]
-    genre_ids: Optional[List[int]]
+    date: str | None
+    rating: float | None
+    description: str | None
+    genre_ids: list[int] | None
 
 
 class DiscoveryResultDict(TypedDict):
-    results: List[MediaResultDict]
+    results: list[MediaResultDict]
     total_results: int
     page: int
     total_pages: int
@@ -29,11 +29,11 @@ class GenrePropertiesDict(TypedDict):
 
 class LLMResponseEntryDict(TypedDict):
     source: str
-    text: Optional[str]
-    error: Optional[str]
+    text: str | None
+    error: str | None
     length: int
 
 
 class LLMComparisonResultDict(TypedDict):
     prompt: str
-    responses: List[LLMResponseEntryDict]
+    responses: list[LLMResponseEntryDict]

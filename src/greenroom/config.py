@@ -5,7 +5,6 @@ and mood mapping. Modify these values to customize genre categorization behavior
 """
 
 from enum import Enum
-from typing import Dict, List
 
 
 # =============================================================================

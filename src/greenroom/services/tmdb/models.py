@@ -1,7 +1,6 @@
 """TMDB-specific response models."""
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 
 class TMDBGenre(BaseModel):
@@ -19,11 +18,11 @@ class TMDBFilm(BaseModel):
     Matches the structure returned by TMDB API for film data.
     """
     id: int
-    title: Optional[str] = None
-    release_date: Optional[str] = None
-    vote_average: Optional[float] = None
-    overview: Optional[str] = None
-    genre_ids: Optional[List[int]] = Field(default_factory=list)
+    title: str | None = None
+    release_date: str | None = None
+    vote_average: float | None = None
+    overview: str | None = None
+    genre_ids: list[int] | None = Field(default_factory=list)
 
 class TMDBTelevision(BaseModel):
     """TMDB television show response structure.
@@ -31,8 +30,8 @@ class TMDBTelevision(BaseModel):
     Matches the structure returned by TMDB API for television data.
     """
     id: int
-    name: Optional[str] = None
-    first_air_date: Optional[str] = None
-    vote_average: Optional[float] = None
-    overview: Optional[str] = None
-    genre_ids: Optional[List[int]] = Field(default_factory=list)
+    name: str | None = None
+    first_air_date: str | None = None
+    vote_average: float | None = None
+    overview: str | None = None
+    genre_ids: list[int] | None = Field(default_factory=list)

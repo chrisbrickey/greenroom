@@ -1,7 +1,6 @@
 """Agent comparison tools for the greenroom MCP server."""
 
 import asyncio
-from typing import Union
 
 from greenroom.models.responses import LLMComparisonResultDict, LLMResponseEntryDict
 
@@ -92,7 +91,7 @@ async def compare_llms(
 
 def _format_responses(
     prompt: str,
-    labeled_responses: list[tuple[str, Union[str, BaseException]]]
+    labeled_responses: list[tuple[str, str | BaseException]]
 ) -> LLMComparisonResultDict:
     """Format labeled LLM responses into a structured comparison result."""
 
