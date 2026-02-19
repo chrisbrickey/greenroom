@@ -38,7 +38,8 @@ def test_get_provider_name_returns_correct_string(monkeypatch):
 # =============================================================================
 
 
-def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMock):
     """Test get_media returns properly formatted MediaList for films."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -74,7 +75,7 @@ def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMo
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=1999, page=1)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=1999, page=1)
 
     assert result.page == 1
     assert result.total_results == 100
@@ -87,7 +88,8 @@ def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMo
     assert result.results[1].title == "Pulp Fiction"
 
 
-def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mock: HTTPXMock):
     """Test get_media returns properly formatted MediaList for television shows."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -121,7 +123,7 @@ def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mock: HT
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2011, page=1)
+    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2011, page=1)
 
     assert result.page == 1
     assert result.total_results == 50
@@ -135,7 +137,8 @@ def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mock: HT
     assert result.results[1].title == "Breaking Bad"
 
 
-def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
     """Test that media with missing optional fields are handled gracefully."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -159,7 +162,7 @@ def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_FILM)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     # Should return 5 media items (all with IDs), not 6
     assert len(result.results) == 5
@@ -190,7 +193,8 @@ def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
     assert result.results[4].date is None
 
 
-def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     """Test get_media handles empty results gracefully."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -207,7 +211,7 @@ def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_FILM)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert result.results == []
     assert result.total_results == 0
@@ -215,7 +219,8 @@ def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     assert result.total_pages == 0
 
 
-def test_get_media_respects_max_results(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_respects_max_results(monkeypatch, httpx_mock: HTTPXMock):
     """Test that max_results parameter limits returned media."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -234,14 +239,15 @@ def test_get_media_respects_max_results(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_FILM, max_results=5)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, max_results=5)
 
     assert len(result.results) == 5
     assert result.results[0].id == "0"
     assert result.results[4].id == "4"
 
 
-def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
     """Test that get_media applies correct default parameters."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -258,7 +264,7 @@ def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    service.get_media(media_type=MEDIA_TYPE_FILM)
+    await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     # Verify the mock was called with correct default URL
     assert len(httpx_mock.get_requests()) == 1
@@ -268,7 +274,8 @@ def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
     assert "include_adult=false" in str(request.url)
 
 
-def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock):
     """Test language parameter filters media correctly."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -287,7 +294,7 @@ def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    result = service.get_media(media_type=MEDIA_TYPE_FILM, language="es")
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, language="es")
 
     assert len(result.results) == 1
     assert result.results[0].title == "Spanish Film"
@@ -308,20 +315,22 @@ def test_get_media_raises_value_error_when_api_key_missing(monkeypatch):
     assert ".env file" in str(exc_info.value)
 
 
-def test_get_media_raises_value_error_for_unsupported_media_type(monkeypatch):
+@pytest.mark.asyncio
+async def test_get_media_raises_value_error_for_unsupported_media_type(monkeypatch):
     """Test that ValueError is raised for unsupported media types."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     service = TMDBService()
 
     with pytest.raises(ValueError) as exc_info:
-        service.get_media(media_type="unsupported_type")
+        await service.get_media(media_type="unsupported_type")
 
     assert "Unsupported media type" in str(exc_info.value)
     assert "unsupported_type" in str(exc_info.value)
 
 
-def test_get_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns HTTP error."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -334,13 +343,14 @@ def test_get_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mo
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "TMDB API error" in str(exc_info.value)
     assert "401" in str(exc_info.value)
 
 
-def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns invalid JSON."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -352,12 +362,13 @@ def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "invalid JSON" in str(exc_info.value)
 
 
-def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIConnectionError is raised when unable to connect to TMDB API."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -369,7 +380,7 @@ def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, h
     service = TMDBService()
 
     with pytest.raises(APIConnectionError) as exc_info:
-        service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.get_media(media_type=MEDIA_TYPE_FILM)
 
     assert "Failed to connect to TMDB API" in str(exc_info.value)
 
@@ -379,7 +390,8 @@ def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, h
 # =============================================================================
 
 
-def test_get_genres_combines_film_and_tv_genres(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_combines_film_and_tv_genres(monkeypatch, httpx_mock: HTTPXMock):
     """Test get_genres returns combined film and TV genres with correct flags."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -407,7 +419,7 @@ def test_get_genres_combines_film_and_tv_genres(monkeypatch, httpx_mock: HTTPXMo
     )
 
     service = TMDBService()
-    result = service.get_genres()
+    result = await service.get_genres()
 
     # Should return GenreList with 3 unique genres
     assert len(result.genres) == 3
@@ -431,7 +443,8 @@ def test_get_genres_combines_film_and_tv_genres(monkeypatch, httpx_mock: HTTPXMo
     assert genres_by_name["Mystery"].has_tv_shows is True
 
 
-def test_get_genres_drops_incomplete_genre_data(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_drops_incomplete_genre_data(monkeypatch, httpx_mock: HTTPXMock):
     """Test that genres with missing id or name fields are silently dropped."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -460,7 +473,7 @@ def test_get_genres_drops_incomplete_genre_data(monkeypatch, httpx_mock: HTTPXMo
     )
 
     service = TMDBService()
-    result = service.get_genres()
+    result = await service.get_genres()
 
     # Should only include valid genres
     assert len(result.genres) == 2
@@ -468,7 +481,8 @@ def test_get_genres_drops_incomplete_genre_data(monkeypatch, httpx_mock: HTTPXMo
     assert genre_names == {"Action", "Mystery"}
 
 
-def test_get_genres_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     """Test get_genres handles empty genre lists gracefully."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -482,12 +496,13 @@ def test_get_genres_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
     )
 
     service = TMDBService()
-    result = service.get_genres()
+    result = await service.get_genres()
 
     assert result.genres == []
 
 
-def test_get_genres_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns HTTP error."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -496,17 +511,22 @@ def test_get_genres_raises_api_response_error_on_http_error(monkeypatch, httpx_m
         status_code=401,
         text="Invalid API key"
     )
+    httpx_mock.add_response(
+        url="https://api.themoviedb.org/3/genre/tv/list?api_key=test_api_key",
+        json={"genres": []}
+    )
 
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        service.get_genres()
+        await service.get_genres()
 
     assert "TMDB API error" in str(exc_info.value)
     assert "401" in str(exc_info.value)
 
 
-def test_get_genres_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns invalid JSON."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -514,16 +534,21 @@ def test_get_genres_raises_api_response_error_on_invalid_json(monkeypatch, httpx
         url="https://api.themoviedb.org/3/genre/movie/list?api_key=test_api_key",
         content=b"Not valid JSON!"
     )
+    httpx_mock.add_response(
+        url="https://api.themoviedb.org/3/genre/tv/list?api_key=test_api_key",
+        json={"genres": []}
+    )
 
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        service.get_genres()
+        await service.get_genres()
 
     assert "invalid JSON" in str(exc_info.value)
 
 
-def test_get_genres_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_get_genres_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIConnectionError is raised when unable to connect to TMDB API."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -531,10 +556,14 @@ def test_get_genres_raises_api_connection_error_on_request_failure(monkeypatch, 
         httpx.RequestError("Connection refused"),
         url="https://api.themoviedb.org/3/genre/movie/list?api_key=test_api_key"
     )
+    httpx_mock.add_response(
+        url="https://api.themoviedb.org/3/genre/tv/list?api_key=test_api_key",
+        json={"genres": []}
+    )
 
     service = TMDBService()
 
     with pytest.raises(APIConnectionError) as exc_info:
-        service.get_genres()
+        await service.get_genres()
 
     assert "Failed to connect to TMDB API" in str(exc_info.value)

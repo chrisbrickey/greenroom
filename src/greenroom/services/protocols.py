@@ -50,7 +50,7 @@ class MediaService(Protocol):
     compatible with the genre and media discovery tools.
     """
 
-    def get_genres(self) -> GenreList:
+    async def get_genres(self) -> GenreList:
         """Fetch all available genres.
 
         Returns:
@@ -62,7 +62,7 @@ class MediaService(Protocol):
         """
         ...
 
-    def get_media(
+    async def get_media(
         self,
         media_type: MediaType,
         genre_id: int | None = None,

@@ -17,18 +17,19 @@ from greenroom.config import Mood
 # Test fetch_genres()
 # =============================================================================
 
-def test_fetch_genres_transforms_genre_list_to_dict():
+@pytest.mark.asyncio
+async def test_fetch_genres_transforms_genre_list_to_dict():
     """Test fetch_genres transforms GenreList to dict format correctly."""
     # Create a mock service that returns a GenreList
     mock_service = MagicMock()
-    mock_service.get_genres.return_value = GenreList(genres=[
+    mock_service.get_genres = AsyncMock(return_value=GenreList(genres=[
         Genre(id=28, name="Action", has_films=True, has_tv_shows=False),
         Genre(id=18, name="Drama", has_films=True, has_tv_shows=True),
         Genre(id=9648, name="Mystery", has_films=False, has_tv_shows=True),
-    ])
+    ]))
 
     # Call the function with mock service
-    result = fetch_genres(mock_service)
+    result = await fetch_genres(mock_service)
 
     # Expected result structure
     expected = {
@@ -53,25 +54,27 @@ def test_fetch_genres_transforms_genre_list_to_dict():
     mock_service.get_genres.assert_called_once()
 
 
-def test_fetch_genres_returns_empty_dict_for_empty_genre_list():
+@pytest.mark.asyncio
+async def test_fetch_genres_returns_empty_dict_for_empty_genre_list():
     """Test fetch_genres returns empty dict when service returns empty GenreList."""
     mock_service = MagicMock()
-    mock_service.get_genres.return_value = GenreList(genres=[])
+    mock_service.get_genres = AsyncMock(return_value=GenreList(genres=[]))
 
-    result = fetch_genres(mock_service)
+    result = await fetch_genres(mock_service)
 
     assert result == {}
     mock_service.get_genres.assert_called_once()
 
 
-def test_fetch_genres_uses_expected_keys():
+@pytest.mark.asyncio
+async def test_fetch_genres_uses_expected_keys():
     """Test fetch_genres uses expected string keys in genre property dicts."""
     mock_service = MagicMock()
-    mock_service.get_genres.return_value = GenreList(genres=[
+    mock_service.get_genres = AsyncMock(return_value=GenreList(genres=[
         Genre(id=99, name="Documentary", has_films=True, has_tv_shows=True),
-    ])
+    ]))
 
-    result = fetch_genres(mock_service)
+    result = await fetch_genres(mock_service)
 
     # Verify the keys match expected strings
     doc_props = result["Documentary"]
@@ -98,7 +101,7 @@ SAMPLE_GENRES = {
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_simplify_genres_calls_sample_with_correct_prompt(mock_fetch_genres):
     """Test that simplify_genres calls ctx.sample with the genre data."""
     mock_fetch_genres.return_value = SAMPLE_GENRES
@@ -128,7 +131,7 @@ async def test_simplify_genres_calls_sample_with_correct_prompt(mock_fetch_genre
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_simplify_genres_falls_back_on_sample_failure(mock_fetch_genres):
     """Test that simplify_genres falls back to sorted keys when sampling fails."""
     mock_fetch_genres.return_value = SAMPLE_GENRES
@@ -153,7 +156,7 @@ async def test_simplify_genres_falls_back_on_sample_failure(mock_fetch_genres):
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_simplify_genres_handles_empty_genres(mock_fetch_genres):
     """Test that simplify_genres handles empty genre dict."""
     mock_fetch_genres.return_value = {}
@@ -172,7 +175,7 @@ async def test_simplify_genres_handles_empty_genres(mock_fetch_genres):
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_simplify_genres_handles_malformed_llm_response(mock_fetch_genres):
     """Test that simplify_genres returns LLM response even if malformed."""
     mock_fetch_genres.return_value = SAMPLE_GENRES
@@ -194,7 +197,7 @@ async def test_simplify_genres_handles_malformed_llm_response(mock_fetch_genres)
 # =============================================================================
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_categorize_all_genres_groups_genres_by_mood(mock_fetch_genres):
     """Test that categorize_all_genres correctly groups genres using hardcoded mappings."""
     # Mock genre data with known genres from the hardcoded mapping
@@ -231,7 +234,7 @@ async def test_categorize_all_genres_groups_genres_by_mood(mock_fetch_genres):
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_categorize_all_genres_handles_empty_genres(mock_fetch_genres):
     """Test that categorize_all_genres handles empty genre dict."""
     mock_fetch_genres.return_value = {}
@@ -256,7 +259,7 @@ async def test_categorize_all_genres_handles_empty_genres(mock_fetch_genres):
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_categorize_all_genres_with_unknown_genres_uses_llm(mock_fetch_genres):
     """Test that categorize_all_genres uses LLM for all unknown genres."""
     # Mock genre data with genres NOT in GENRE_MOOD_MAP
@@ -302,7 +305,7 @@ async def test_categorize_all_genres_with_unknown_genres_uses_llm(mock_fetch_gen
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_categorize_all_genres_falls_back_to_other_when_llm_fails(mock_fetch_genres):
     """Test that categorize_all_genres places unknown genres in Other when LLM fails."""
     # Mock genre data with genres NOT in GENRE_MOOD_MAP
@@ -339,7 +342,7 @@ async def test_categorize_all_genres_falls_back_to_other_when_llm_fails(mock_fet
 
 
 @pytest.mark.asyncio
-@patch('greenroom.tools.genre_tools.fetch_genres')
+@patch('greenroom.tools.genre_tools.fetch_genres', new_callable=AsyncMock)
 async def test_categorize_all_genres_falls_back_to_other_on_invalid_llm_response(mock_fetch_genres):
     """Test that categorize_all_genres places genres in Other when LLM returns invalid mood."""
     # Mock genre data with unknown genre

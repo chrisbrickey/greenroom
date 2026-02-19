@@ -15,7 +15,7 @@ def register_discovery_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     @mcp.tool()
-    def discover_films(
+    async def discover_films(
         genre_id: int | None = None,
         year: int | None = None,
         language: str | None = None,
@@ -64,10 +64,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         """
 
         # Delegate to helper function to enable unit testing without FastMCP server setup
-        return fetch_films(service, genre_id, year, language, sort_by, page, max_results)
+        return await fetch_films(service, genre_id, year, language, sort_by, page, max_results)
 
     @mcp.tool()
-    def discover_television(
+    async def discover_television(
         genre_id: int | None = None,
         year: int | None = None,
         language: str | None = None,
@@ -116,13 +116,13 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         """
 
         # Delegate to helper function to enable unit testing without FastMCP server setup
-        return fetch_television(service, genre_id, year, language, sort_by, page, max_results)
+        return await fetch_television(service, genre_id, year, language, sort_by, page, max_results)
 
 # =============================================================================
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_films(
+async def fetch_films(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
@@ -136,7 +136,7 @@ def fetch_films(
     _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
 
     # Call service
-    media_list = media_service.get_media(
+    media_list = await media_service.get_media(
         media_type=MEDIA_TYPE_FILM,
         genre_id=genre_id,
         year=year,
@@ -149,7 +149,7 @@ def fetch_films(
     # Format for agent
     return _format_media_list(media_list, media_service)
 
-def fetch_television(
+async def fetch_television(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
@@ -163,7 +163,7 @@ def fetch_television(
     _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
 
     # Call service
-    media_list = media_service.get_media(
+    media_list = await media_service.get_media(
         media_type=MEDIA_TYPE_TELEVISION,
         genre_id=genre_id,
         year=year,

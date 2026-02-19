@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import date
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 from greenroom.tools.discovery_tools import fetch_films, fetch_television
 from greenroom.models.media import Media, MediaList
@@ -13,6 +13,7 @@ def mock_media_service():
     """Create a mock media service."""
     service = Mock()
     service.get_provider_name.return_value = "TMDB"
+    service.get_media = AsyncMock()
     return service
 
 
@@ -69,11 +70,12 @@ def sample_tv_media_list():
 class TestFetchFilms:
     """Tests for fetch_films helper function."""
 
-    def test_returns_formatted_results(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_returns_formatted_results(self, mock_media_service, sample_film_media_list):
         """Test fetch_films returns correctly formatted results."""
         mock_media_service.get_media.return_value = sample_film_media_list
 
-        result = fetch_films(mock_media_service)
+        result = await fetch_films(mock_media_service)
 
         assert result["page"] == 1
         assert result["total_results"] == 50
@@ -97,11 +99,12 @@ class TestFetchFilms:
         assert result["results"][1]["description"] is None
         assert result["results"][1]["genre_ids"] == []
 
-    def test_uses_film_media_type_and_default_parameters(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_uses_film_media_type_and_default_parameters(self, mock_media_service, sample_film_media_list):
         """Test fetch_films uses MEDIA_TYPE_FILM and passes default parameters."""
         mock_media_service.get_media.return_value = sample_film_media_list
 
-        fetch_films(mock_media_service)
+        await fetch_films(mock_media_service)
 
         mock_media_service.get_media.assert_called_once_with(
             media_type=MEDIA_TYPE_FILM,
@@ -113,11 +116,12 @@ class TestFetchFilms:
             max_results=20
         )
 
-    def test_uses_film_media_type_with_custom_parameters(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_uses_film_media_type_with_custom_parameters(self, mock_media_service, sample_film_media_list):
         """Test fetch_films uses MEDIA_TYPE_FILM and passes custom parameters."""
         mock_media_service.get_media.return_value = sample_film_media_list
 
-        fetch_films(
+        await fetch_films(
             mock_media_service,
             genre_id=28,
             year=2024,
@@ -137,68 +141,74 @@ class TestFetchFilms:
             max_results=50
         )
 
-    def test_validates_year(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_year(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates year parameter."""
         with pytest.raises(ValueError, match="year must be 1900 or later"):
-            fetch_films(mock_media_service, year=1899)
+            await fetch_films(mock_media_service, year=1899)
 
         # Boundary: 1900 should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        fetch_films(mock_media_service, year=1900)
+        await fetch_films(mock_media_service, year=1900)
 
-    def test_validates_page(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_page(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates page parameter."""
         with pytest.raises(ValueError, match="page must be 1 or greater"):
-            fetch_films(mock_media_service, page=0)
+            await fetch_films(mock_media_service, page=0)
         with pytest.raises(ValueError, match="page must be 1 or greater"):
-            fetch_films(mock_media_service, page=-1)
+            await fetch_films(mock_media_service, page=-1)
 
         # Boundary: 1 should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        fetch_films(mock_media_service, page=1)
+        await fetch_films(mock_media_service, page=1)
 
-    def test_validates_max_results(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_max_results(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates max_results parameter."""
         with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            fetch_films(mock_media_service, max_results=0)
+            await fetch_films(mock_media_service, max_results=0)
         with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            fetch_films(mock_media_service, max_results=101)
+            await fetch_films(mock_media_service, max_results=101)
 
         # Boundaries: 1 and 100 should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        fetch_films(mock_media_service, max_results=1)
-        fetch_films(mock_media_service, max_results=100)
+        await fetch_films(mock_media_service, max_results=1)
+        await fetch_films(mock_media_service, max_results=100)
 
-    def test_validates_language(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_language(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates language parameter."""
         with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            fetch_films(mock_media_service, language="eng")
+            await fetch_films(mock_media_service, language="eng")
         with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            fetch_films(mock_media_service, language="e")
+            await fetch_films(mock_media_service, language="e")
         with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            fetch_films(mock_media_service, language="12")
+            await fetch_films(mock_media_service, language="12")
 
         # Valid codes should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        fetch_films(mock_media_service, language="en")
-        fetch_films(mock_media_service, language="fr")
+        await fetch_films(mock_media_service, language="en")
+        await fetch_films(mock_media_service, language="fr")
 
-    def test_validates_sort_by(self, mock_media_service, sample_film_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_sort_by(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates sort_by parameter."""
         with pytest.raises(ValueError, match="sort_by must be one of"):
-            fetch_films(mock_media_service, sort_by="invalid_sort")
+            await fetch_films(mock_media_service, sort_by="invalid_sort")
 
         # Valid options should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        fetch_films(mock_media_service, sort_by="popularity.desc")
-        fetch_films(mock_media_service, sort_by="date.asc")
+        await fetch_films(mock_media_service, sort_by="popularity.desc")
+        await fetch_films(mock_media_service, sort_by="date.asc")
 
-    def test_empty_film_results(self, mock_media_service):
+    @pytest.mark.asyncio
+    async def test_empty_film_results(self, mock_media_service):
         """Test handling of empty results from service."""
         empty_list = MediaList(results=[], total_results=0, page=1, total_pages=0)
         mock_media_service.get_media.return_value = empty_list
 
-        result = fetch_films(mock_media_service)
+        result = await fetch_films(mock_media_service)
 
         assert result["results"] == []
         assert result["total_results"] == 0
@@ -207,11 +217,12 @@ class TestFetchFilms:
 class TestFetchTelevision:
     """Tests for fetch_television helper function."""
 
-    def test_returns_formatted_results(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_returns_formatted_results(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television returns correctly formatted results."""
         mock_media_service.get_media.return_value = sample_tv_media_list
 
-        result = fetch_television(mock_media_service)
+        result = await fetch_television(mock_media_service)
 
         assert result["page"] == 2
         assert result["total_results"] == 25
@@ -227,11 +238,12 @@ class TestFetchTelevision:
         assert result["results"][0]["description"] == "TV Description 1"
         assert result["results"][0]["genre_ids"] == [18, 10765]
 
-    def test_uses_television_media_type_and_default_parameters(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_uses_television_media_type_and_default_parameters(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television uses MEDIA_TYPE_TELEVISION and passes default parameters."""
         mock_media_service.get_media.return_value = sample_tv_media_list
 
-        fetch_television(mock_media_service)
+        await fetch_television(mock_media_service)
 
         mock_media_service.get_media.assert_called_once_with(
             media_type=MEDIA_TYPE_TELEVISION,
@@ -243,11 +255,12 @@ class TestFetchTelevision:
             max_results=20
         )
 
-    def test_uses_television_media_type_with_custom_parameters(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_uses_television_media_type_with_custom_parameters(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television uses MEDIA_TYPE_TELEVISION and passes custom parameters."""
         mock_media_service.get_media.return_value = sample_tv_media_list
 
-        fetch_television(
+        await fetch_television(
             mock_media_service,
             genre_id=18,
             year=2023,
@@ -267,62 +280,68 @@ class TestFetchTelevision:
             max_results=75
         )
 
-    def test_validates_year(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_year(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates year parameter."""
         with pytest.raises(ValueError, match="year must be 1900 or later"):
-            fetch_television(mock_media_service, year=1899)
+            await fetch_television(mock_media_service, year=1899)
 
         # Boundary: 1900 should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        fetch_television(mock_media_service, year=1900)
+        await fetch_television(mock_media_service, year=1900)
 
-    def test_validates_page(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_page(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates page parameter."""
         with pytest.raises(ValueError, match="page must be 1 or greater"):
-            fetch_television(mock_media_service, page=0)
+            await fetch_television(mock_media_service, page=0)
         with pytest.raises(ValueError, match="page must be 1 or greater"):
-            fetch_television(mock_media_service, page=-1)
+            await fetch_television(mock_media_service, page=-1)
 
         # Boundary: 1 should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        fetch_television(mock_media_service, page=1)
+        await fetch_television(mock_media_service, page=1)
 
-    def test_validates_max_results(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_max_results(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates max_results parameter."""
         with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            fetch_television(mock_media_service, max_results=0)
+            await fetch_television(mock_media_service, max_results=0)
         with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            fetch_television(mock_media_service, max_results=101)
+            await fetch_television(mock_media_service, max_results=101)
 
         # Boundaries: 1 and 100 should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        fetch_television(mock_media_service, max_results=1)
-        fetch_television(mock_media_service, max_results=100)
+        await fetch_television(mock_media_service, max_results=1)
+        await fetch_television(mock_media_service, max_results=100)
 
-    def test_validates_language(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_language(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates language parameter."""
         with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            fetch_television(mock_media_service, language="english")
+            await fetch_television(mock_media_service, language="english")
 
         # Valid codes should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        fetch_television(mock_media_service, language="en")
+        await fetch_television(mock_media_service, language="en")
 
-    def test_validates_sort_by(self, mock_media_service, sample_tv_media_list):
+    @pytest.mark.asyncio
+    async def test_validates_sort_by(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates sort_by parameter."""
         with pytest.raises(ValueError, match="sort_by must be one of"):
-            fetch_television(mock_media_service, sort_by="name.asc")
+            await fetch_television(mock_media_service, sort_by="name.asc")
 
         # Valid options should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        fetch_television(mock_media_service, sort_by="popularity.desc")
+        await fetch_television(mock_media_service, sort_by="popularity.desc")
 
-    def test_empty_television_results(self, mock_media_service):
+    @pytest.mark.asyncio
+    async def test_empty_television_results(self, mock_media_service):
         """Test handling of empty results from service."""
         empty_list = MediaList(results=[], total_results=0, page=1, total_pages=0)
         mock_media_service.get_media.return_value = empty_list
 
-        result = fetch_television(mock_media_service)
+        result = await fetch_television(mock_media_service)
 
         assert result["results"] == []
         assert result["total_results"] == 0

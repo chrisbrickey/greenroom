@@ -1,5 +1,6 @@
 """Service layer that encapsulates provider-specific logic."""
 
+import asyncio
 from datetime import date
 from typing import Any
 from pydantic import ValidationError
@@ -35,7 +36,7 @@ class TMDBService:
     # Retrieve specific media
     # =============================================================================
 
-    def get_media(
+    async def get_media(
         self,
         media_type: MediaType,
         genre_id: int | None = None,
@@ -74,7 +75,7 @@ class TMDBService:
 
         # Call TMDB API
         endpoint = f"/discover/{config.endpoint}"
-        data = self.client.get(endpoint, params)
+        data = await self.client.get(endpoint, params)
 
         # Parse and transform response
         tmdb_items = self._parse_response(data["results"], config)
@@ -199,7 +200,7 @@ class TMDBService:
     # Retrieve categorization information
     # =============================================================================
 
-    def get_genres(self) -> GenreList:
+    async def get_genres(self) -> GenreList:
         """Fetch all genres from TMDB for films and TV shows.
 
         Returns:
@@ -209,9 +210,12 @@ class TMDBService:
             APIResponseError: For TMDB API errors
             APIConnectionError: For network errors
         """
-        # Fetch genres for both films and TV shows
-        film_data = self.client.get("/genre/movie/list", {})
-        tv_data = self.client.get("/genre/tv/list", {})
+
+        # Concurrently fetch genres for films and television
+        film_data, tv_data = await asyncio.gather(
+            self.client.get("/genre/movie/list", {}),
+            self.client.get("/genre/tv/list", {})
+        )
 
         # Parse and validate genre data
         film_genres = self._parse_genres(film_data.get("genres", []))

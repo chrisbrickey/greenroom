@@ -19,7 +19,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     @mcp.tool()
-    def list_genres() -> dict[str, GenrePropertiesDict]:
+    async def list_genres() -> dict[str, GenrePropertiesDict]:
         """
         List all available entertainment genres across media types and providers.
 
@@ -41,7 +41,7 @@ def register_genre_tools(mcp: FastMCP) -> None:
         """
 
         # Delegate to helper function to enable unit testing without FastMCP server setup
-        return fetch_genres(service)
+        return await fetch_genres(service)
 
     @mcp.tool()
     async def list_genres_simplified(ctx: Context) -> str:
@@ -89,11 +89,11 @@ def register_genre_tools(mcp: FastMCP) -> None:
 # Helper Methods (extracted from tools to ease unit testing)
 # =============================================================================
 
-def fetch_genres(service: MediaService) -> dict[str, GenrePropertiesDict]:
+async def fetch_genres(service: MediaService) -> dict[str, GenrePropertiesDict]:
     """Fetch genres from the service and transform to dict format."""
 
     # Get genres from service
-    genre_list = service.get_genres()
+    genre_list = await service.get_genres()
 
     # Transform to the expected dict format for backward compatibility
     return {
@@ -109,7 +109,7 @@ async def simplify_genres(ctx: Context, service: MediaService) -> str:
     """Encapsulates the genre simplification logic."""
 
     # Fetch all genre data
-    genres = fetch_genres(service)
+    genres = await fetch_genres(service)
 
     try:
         # Use LLM sampling to format the response
@@ -136,7 +136,7 @@ async def categorize_all_genres(ctx: Context, service: MediaService) -> dict[str
     """Encapsulates the genre categorization logic."""
 
     # Fetch all genres
-    genres = fetch_genres(service)
+    genres = await fetch_genres(service)
 
     # Initialize category buckets using helper function
     categorized = create_empty_categorized_dict()
