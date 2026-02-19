@@ -32,7 +32,7 @@ class TMDBClient:
                 "Get your key from https://www.themoviedb.org/settings/api"
             )
 
-    def get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
+    async def get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
         """Make a GET request to TMDB API.
 
         Args:
@@ -52,8 +52,8 @@ class TMDBClient:
         headers = {"accept": "application/json"}
 
         try:
-            with httpx.Client(timeout=10.0) as client:
-                response = client.get(
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
                     f"{self.BASE_URL}{endpoint}",
                     params=params,
                     headers=headers

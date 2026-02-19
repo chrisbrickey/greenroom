@@ -8,7 +8,8 @@ from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.tools.genre_tools import fetch_genres
 
 
-def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
     """Use genre ID from genre tools to discover specific films with media discovery tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -28,7 +29,7 @@ def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTT
 
     # Get genre ID from list_genres
     service = TMDBService()
-    genres = fetch_genres(service)
+    genres = await fetch_genres(service)
     action_id = genres["Action"]["id"]
 
     assert action_id == 28
@@ -49,14 +50,15 @@ def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTT
     )
 
     # Use genre ID to discover films via service
-    result = service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Action Film"
     assert action_id in result.results[0].genre_ids
 
 
-def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
     """Use genre ID from genre tools to discover specific tv shows with media discovery tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -76,7 +78,7 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
 
     # Get genre ID from list_genres
     service = TMDBService()
-    genres = fetch_genres(service)
+    genres = await fetch_genres(service)
     drama_id = genres["Drama"]["id"]
 
     assert drama_id == 18
@@ -97,7 +99,7 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
     )
 
     # Use genre ID to discover television via service
-    result = service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Drama Show"
@@ -105,7 +107,8 @@ def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock
     assert drama_id in result.results[0].genre_ids
 
 
-def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock: HTTPXMock):
+@pytest.mark.asyncio
+async def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock: HTTPXMock):
     """Discover both films and TV shows with the same shared genre ID."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -125,7 +128,7 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
 
     # Get shared genre ID from list_genres
     service = TMDBService()
-    genres = fetch_genres(service)
+    genres = await fetch_genres(service)
     drama_id = genres["Drama"]["id"]
 
     assert drama_id == 18
@@ -163,7 +166,7 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
     )
 
     # Discover films with the shared genre
-    film_result = service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
+    film_result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
 
     assert len(film_result.results) == 1
     assert film_result.results[0].title == "Drama Film"
@@ -171,7 +174,7 @@ def test_discover_films_and_television_with_shared_genre(monkeypatch, httpx_mock
     assert drama_id in film_result.results[0].genre_ids
 
     # Discover television with the same shared genre
-    tv_result = service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    tv_result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(tv_result.results) == 1
     assert tv_result.results[0].title == "Drama Show"
