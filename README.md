@@ -8,7 +8,7 @@ As of 2026, greenroom provides recommendations on film and television content. I
 to integrate with additional data providers and LLM services to broaden the offering.
 
 #### Discover films and television using hybrid human-AI curation  
-![discover_media](docs/images/discovery-duo.png)
+![discover_media](docs/images/discovery-duo2.png)
 
 #### Compare outputs of multiple agents and models
 ![compare LLM responses](docs/images/compare-llms-duo.png)
@@ -21,7 +21,7 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 - `What kinds of entertainment can you recommend?`
 - `I'm in the mood for something serious. Recommend some entertainment content.`
 - `Recommend spanish language documentary films from the 2010s.`
-- `I loved Arrested Development and Atlanta. Recommend other entertainment options that I would like.`
+- `I loved Atlanta and Black Mirror. Recommend other entertainment options that I would like.`
 
 ### Event Planning
 - `I'm hosting a French film night. Recommend highly-rated French films across genres.`
