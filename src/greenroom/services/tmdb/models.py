@@ -12,26 +12,32 @@ class TMDBGenre(BaseModel):
     name: str
 
 
-class TMDBFilm(BaseModel):
+class TMDBMediaItem(BaseModel):
+    """Fields TMDB returns for every media item, whatever the media type.
+
+    Media-type-specific subclasses add the title and date fields, which TMDB
+    names differently per type. TMDBMediaConfig records those names so the
+    mapper can read them without knowing which subclass it holds.
+    """
+    id: int
+    vote_average: float | None = None
+    overview: str | None = None
+    genre_ids: list[int] | None = Field(default_factory=list)
+
+
+class TMDBFilm(TMDBMediaItem):
     """TMDB film response structure.
 
     Matches the structure returned by TMDB API for film data.
     """
-    id: int
     title: str | None = None
     release_date: str | None = None
-    vote_average: float | None = None
-    overview: str | None = None
-    genre_ids: list[int] | None = Field(default_factory=list)
 
-class TMDBTelevision(BaseModel):
+
+class TMDBTelevision(TMDBMediaItem):
     """TMDB television show response structure.
 
     Matches the structure returned by TMDB API for television data.
     """
-    id: int
     name: str | None = None
     first_air_date: str | None = None
-    vote_average: float | None = None
-    overview: str | None = None
-    genre_ids: list[int] | None = Field(default_factory=list)

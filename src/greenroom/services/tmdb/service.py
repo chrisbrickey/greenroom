@@ -1,24 +1,22 @@
 """Service layer that encapsulates provider-specific logic."""
 
 import asyncio
-from datetime import date
-from typing import Any
-from pydantic import ValidationError
 
-from greenroom.models.media import Media, MediaList
-from greenroom.models.genre import Genre, GenreList
-from greenroom.models.media_types import MediaType
+from greenroom.models.genre import GenreList
+from greenroom.models.media import MediaList
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RESULTS
 from greenroom.services.tmdb.client import TMDBClient
 from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDB_TELEVISION_CONFIG, TMDBMediaConfig
-from greenroom.services.tmdb.models import TMDBGenre
+from greenroom.services.tmdb.genre_mapper import to_genre_list
+from greenroom.services.tmdb.media_mapper import to_media_list
+from greenroom.services.tmdb.params import build_discover_params, build_search_params
 
 
-# Sort order applied when the caller does not request one
-DEFAULT_SORT_ORDER = "popularity.desc"
-
-# Provider-agnostic sort field exposed by the tools. TMDB names its date field
-# differently per media type, so this is translated before the request is sent.
-GENERIC_DATE_SORT_FIELD = "date"
+# Genre endpoints are fixed per media type rather than configurable, because
+# TMDB returns genre lists in a single shape that is not media-type dependent.
+FILM_GENRES_ENDPOINT = "/genre/movie/list"
+TELEVISION_GENRES_ENDPOINT = "/genre/tv/list"
 
 
 class TMDBService:
@@ -26,14 +24,18 @@ class TMDBService:
     This service encapsulates TMDB-specific logic including
     API communication, response parsing, and data transformation to
     the standard models which are expected by the tools.
+
+    The translation between TMDB's vocabulary and the standard models lives in
+    sibling modules: params builds outgoing requests, and media_mapper and
+    genre_mapper convert incoming payloads. This class orchestrates them.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the TMDB service."""
         self.client = TMDBClient()
-        self.config_map = {
-            "film": TMDB_FILM_CONFIG,
-            "television": TMDB_TELEVISION_CONFIG
+        self.config_map: dict[str, TMDBMediaConfig] = {
+            MEDIA_TYPE_FILM: TMDB_FILM_CONFIG,
+            MEDIA_TYPE_TELEVISION: TMDB_TELEVISION_CONFIG
         }
 
     def get_provider_name(self) -> str:
@@ -41,7 +43,7 @@ class TMDBService:
         return self.client.SERVICE_NAME
 
     # =============================================================================
-    # Retrieve specific media
+    # Retrieve media
     # =============================================================================
 
     async def get_media(
@@ -52,9 +54,9 @@ class TMDBService:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> MediaList:
-        """Get media from TMDB.
+        """From TMDB, retrieve list of media matching the given criteria.
 
         Args:
             media_type: Type-safe media type (see media_types module)
@@ -73,160 +75,66 @@ class TMDBService:
             APIResponseError: For TMDB API errors
             APIConnectionError: For network errors
         """
-        # Get media type configuration
-        config = self.config_map.get(media_type)
-        if not config:
-            raise ValueError(f"Unsupported media type: {media_type}")
 
-        # Build TMDB query parameters
-        params = self._build_params(config, genre_id, year, language, sort_by, page)
+        config = self._config_for(media_type)
+        params = build_discover_params(config, genre_id, year, language, sort_by, page)
+        data = await self.client.get(f"/discover/{config.endpoint}", params)
 
-        # Call TMDB API
-        endpoint = f"/discover/{config.endpoint}"
-        data = await self.client.get(endpoint, params)
+        return to_media_list(data, config, media_type, page, max_results)
 
-        # Parse and transform response
-        tmdb_items = self._parse_response(data["results"], config)
-        standard_items = [
-            self._to_standard_media(item, config, media_type)
-            for item in tmdb_items
-        ]
-
-        # Apply max_results limit
-        limited_items = standard_items[:max_results]
-
-        # Return standardized response
-        return MediaList(
-            results=limited_items,
-            total_results=data.get("total_results", 0),
-            page=page,
-            total_pages=data.get("total_pages", 0)
-        )
-
-    def _build_params(
+    async def search_media(
         self,
-        config: TMDBMediaConfig,
-        genre_id: int | None,
-        year: int | None,
-        language: str | None,
-        sort_by: str | None,
-        page: int
-    ) -> dict:
-        """Build TMDB-specific query parameters.
+        media_type: MediaType,
+        query: str,
+        year: int | None = None,
+        display_language: str | None = None,
+        page: int = 1,
+        max_results: int = SEARCH_MAX_RESULTS
+    ) -> MediaList:
+        """From TMDB, search for one element (or short list) that matches the given title.
 
         Args:
-            config: TMDB media configuration
-            genre_id: Optional genre filter
-            year: Optional year filter
-            language: Optional language filter
-            sort_by: Sort order (None defaults to "popularity.desc")
-            page: Page number
+            media_type: Type-safe media type (see media_types module)
+            query: Title text to search for
+            year: Optional year filter (release/air year)
+            display_language: Optional ISO 639-1 code selecting the language the
+                              title and overview are returned in. The search
+                              endpoints cannot filter by original language
+            page: Page number (1-indexed)
+            max_results: Maximum results to return
 
         Returns:
-            Dictionary of TMDB query parameters
+            MediaList with standardized Media objects, ordered by TMDB relevance
+
+        Raises:
+            ValueError: If media_type is not supported
+            APIResponseError: For TMDB API errors
+            APIConnectionError: For network errors
         """
-        params = {
-            "sort_by": self._to_provider_sort_order(sort_by, config),
-            "page": page,
-            "include_adult": False, # Exclude pornographic content
-            "include_video": False  # Exclude video-only content
-        }
 
-        if genre_id is not None:
-            params["with_genres"] = genre_id
+        config = self._config_for(media_type)
+        params = build_search_params(config, query, year, display_language, page)
+        data = await self.client.get(f"/search/{config.endpoint}", params)
 
-        if year is not None:
-            params[config.year_param] = year
+        return to_media_list(data, config, media_type, page, max_results)
 
-        if language is not None:
-            params["with_original_language"] = language
-
-        return params
-
-    def _to_provider_sort_order(self, sort_by: str | None, config: TMDBMediaConfig) -> str:
-        """Translate a provider-agnostic sort order into TMDB's vocabulary.
-
-        The tools expose "date.asc" and "date.desc" so that callers need not know
-        whether they are sorting films or television. TMDB rejects "date" and
-        expects "release_date" for films and "first_air_date" for television.
-        Every other sort order is already TMDB-native and passes through.
+    def _config_for(self, media_type: MediaType) -> TMDBMediaConfig:
+        """Look up the TMDB configuration for a media type.
 
         Args:
-            sort_by: Requested sort order, or None for the default
-            config: TMDB media configuration supplying the date field name
-
-        Returns:
-            Sort order string accepted by the TMDB discover endpoints
-        """
-        if sort_by is None:
-            return DEFAULT_SORT_ORDER
-
-        field, separator, direction = sort_by.partition(".")
-        if field == GENERIC_DATE_SORT_FIELD:
-            return f"{config.date_sort_prefix}{separator}{direction}"
-
-        return sort_by
-
-    def _parse_response(self, raw_results: list, config: TMDBMediaConfig) -> list:
-        """Parse TMDB response using Pydantic models.
-
-        Args:
-            raw_results: Raw results array from TMDB API
-            config: TMDB media configuration with model class
-
-        Returns:
-            List of validated Pydantic model instances
-        """
-        valid_items = []
-        for item_data in raw_results:
-            try:
-                valid_items.append(config.model_class(**item_data))
-            except ValidationError:
-                # Skip items that don't match the schema (missing required fields)
-                pass
-        return valid_items
-
-    def _to_standard_media(
-        self,
-        tmdb_item,
-        config: TMDBMediaConfig,
-        media_type: MediaType
-    ) -> Media:
-        """Transform TMDB model to standard Media model.
-
-        Args:
-            tmdb_item: Validated TMDB Pydantic model (TMDBFilm or TMDBTVShow)
-            config: TMDB media configuration
             media_type: Type-safe media type
 
         Returns:
-            Standard Media object with normalized field names
+            TMDB media configuration for that type
+
+        Raises:
+            ValueError: If this provider does not support the media type
         """
-        return Media(
-            id=str(tmdb_item.id),
-            media_type=media_type,
-            title=getattr(tmdb_item, config.title_field, None) or "",
-            date=self._parse_date(getattr(tmdb_item, config.date_field, None)),
-            rating=tmdb_item.vote_average,
-            description=tmdb_item.overview,
-            genre_ids=tmdb_item.genre_ids or []
-        )
 
-    def _parse_date(self, date_str: str | None) -> date | None:
-        """Parse TMDB date string to date object.
-
-        Args:
-            date_str: Date string in YYYY-MM-DD format
-
-        Returns:
-            Date object or None if parsing fails
-        """
-        if not date_str:
-            return None
-        try:
-            return date.fromisoformat(date_str)
-        except ValueError:
-            return None
+        config = self.config_map.get(media_type)
+        if not config:
+            raise ValueError(f"Unsupported media type: {media_type}")
+        return config
 
     # =============================================================================
     # Retrieve categorization information
@@ -245,73 +153,8 @@ class TMDBService:
 
         # Concurrently fetch genres for films and television
         film_data, tv_data = await asyncio.gather(
-            self.client.get("/genre/movie/list", {}),
-            self.client.get("/genre/tv/list", {})
+            self.client.get(FILM_GENRES_ENDPOINT, {}),
+            self.client.get(TELEVISION_GENRES_ENDPOINT, {})
         )
 
-        # Parse and validate genre data
-        film_genres = self._parse_genres(film_data.get("genres", []))
-        tv_genres = self._parse_genres(tv_data.get("genres", []))
-
-        # Combine into unified GenreList
-        return self._combine_genre_lists(film_genres, tv_genres)
-
-    def _parse_genres(self, raw_genres: list[dict[str, Any]]) -> list[TMDBGenre]:
-        """Parse TMDB genre response using Pydantic validation.
-
-        Args:
-            raw_genres: Raw genre data from TMDB API
-
-        Returns:
-            List of validated TMDBGenre models (invalid entries are silently skipped)
-        """
-        valid_genres = []
-        for genre in raw_genres:
-            try:
-                valid_genres.append(TMDBGenre(**genre))
-            except ValidationError:
-                # Skip invalid genre entries
-                pass
-        return valid_genres
-
-    def _combine_genre_lists(
-        self,
-        film_genres: list[TMDBGenre],
-        tv_genres: list[TMDBGenre]
-    ) -> GenreList:
-        """Combine film and TV genre lists into a unified GenreList.
-
-        Args:
-            film_genres: List of validated TMDBGenre models for films
-            tv_genres: List of validated TMDBGenre models for TV shows
-
-        Returns:
-            GenreList with Genre objects including media type availability flags
-        """
-        # Build a map by genre name for deduplication
-        genres_map: dict[str, Genre] = {}
-
-        # Add film genres
-        for tmdb_genre in film_genres:
-            genres_map[tmdb_genre.name] = Genre(
-                id=tmdb_genre.id,
-                name=tmdb_genre.name,
-                has_films=True,
-                has_tv_shows=False
-            )
-
-        # Add or update with TV genres
-        for tmdb_genre in tv_genres:
-            if tmdb_genre.name in genres_map:
-                # Genre exists for films, mark as also available for TV
-                genres_map[tmdb_genre.name].has_tv_shows = True
-            else:
-                # TV-only genre
-                genres_map[tmdb_genre.name] = Genre(
-                    id=tmdb_genre.id,
-                    name=tmdb_genre.name,
-                    has_films=False,
-                    has_tv_shows=True
-                )
-
-        return GenreList(genres=list(genres_map.values()))
+        return to_genre_list(film_data, tv_data)

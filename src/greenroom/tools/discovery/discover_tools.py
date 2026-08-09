@@ -1,27 +1,26 @@
-"""Media discovery tools for the greenroom MCP server."""
+"""Browse-by-criteria media tools for the greenroom MCP server.
+
+These tools list media matching filters such as genre, year, and language. See
+search_tools for looking up a specific title.
+"""
 
 from fastmcp import FastMCP
 
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
 from greenroom.models.responses import DiscoveryResultDict
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.services.protocols import MediaService
-from greenroom.services.tmdb.service import TMDBService
-from greenroom.models.media import MediaList
-from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
+from greenroom.tools.discovery.formatting import format_media_list
+from greenroom.tools.discovery.validation import validate_discovery_params
 
 
-# Sort orders the discovery tools accept. These are provider-agnostic: the
-# service translates them into the vocabulary of whichever provider it wraps.
-VALID_SORT_OPTIONS = (
-    "popularity.desc", "popularity.asc",
-    "vote_average.desc", "vote_average.asc",
-    "date.desc", "date.asc",
-)
+def register_discover_tools(mcp: FastMCP, service: MediaService) -> None:
+    """Register the browse-by-criteria media tools with the MCP server.
 
-
-def register_discovery_tools(mcp: FastMCP) -> None:
-    """Register media discovery tools with the MCP server."""
-
-    service = TMDBService()
+    Args:
+        mcp: Server to register the tools with
+        service: Media provider the registered tools delegate to
+    """
 
     @mcp.tool()
     async def discover_films(
@@ -30,11 +29,14 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
-        Discovers films from based on optional filters like genre, release year,
-        language, and sorting preferences. For now, defaults to TMDB service.
+        Discovers films (retrieves a list) by applying optional filters like
+        genre, release year, original language, and sorting preferences.
+        Use search_films instead to retrieve a specific film by title.
+
+        For now, defaults to TMDB service.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
@@ -44,7 +46,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
-            max_results: Maximum number of results to return (default: 20, max: 100)
+            max_results: Maximum number of results to return from this page
+                         (default: DISCOVER_MAX_RESULTS, max: MAX_RESULTS_MAX).
+                         One call fetches one page, so use page to reach
+                         results beyond that.
 
         Returns:
             Dictionary containing:
@@ -82,11 +87,14 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
-        Discovers television shows based on optional filters like genre, first air year,
-        language, and sorting preferences. For now, defaults to TMDB service.
+        Discovers television shows (retrieves a list) by applying optional filters like
+        genre, first air year, original language, and sorting preferences.
+        Use search_television instead to retrieve a specific show by title.
+
+        For now, defaults to TMDB service.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
@@ -96,7 +104,10 @@ def register_discovery_tools(mcp: FastMCP) -> None:
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
-            max_results: Maximum number of results to return (default: 20, max: 100)
+            max_results: Maximum number of results to return from this page
+                         (default: DISCOVER_MAX_RESULTS, max: MAX_RESULTS_MAX).
+                         One call fetches one page, so use page to reach
+                         results beyond that.
 
         Returns:
             Dictionary containing:
@@ -127,8 +138,13 @@ def register_discovery_tools(mcp: FastMCP) -> None:
         # Delegate to helper function to enable unit testing without FastMCP server setup
         return await fetch_television(service, genre_id, year, language, sort_by, page, max_results)
 
+
 # =============================================================================
-# Helper Methods (extracted from tools to ease unit testing)
+# Discovery flow (list media by filter criteria)
+#
+# fetch_films/fetch_television are the public, independently-testable seams
+# (extracted from tools to ease unit testing); both share the same
+# validate -> call service -> format shape via _discover_media.
 # =============================================================================
 
 async def fetch_films(
@@ -138,25 +154,11 @@ async def fetch_films(
     language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
-    max_results: int = 20,
+    max_results: int = DISCOVER_MAX_RESULTS,
 ) -> DiscoveryResultDict:
-
-    # Validate parameters
-    _validate_discovery_params_internal(MEDIA_TYPE_FILM, year, page, max_results, language, sort_by)
-
-    # Call service
-    media_list = await media_service.get_media(
-        media_type=MEDIA_TYPE_FILM,
-        genre_id=genre_id,
-        year=year,
-        language=language,
-        sort_by=sort_by,
-        page=page,
-        max_results=max_results
+    return await _discover_media(
+        media_service, MEDIA_TYPE_FILM, genre_id, year, language, sort_by, page, max_results
     )
-
-    # Format for agent
-    return _format_media_list(media_list, media_service)
 
 async def fetch_television(
     media_service: MediaService,
@@ -165,15 +167,31 @@ async def fetch_television(
     language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
-    max_results: int = 20
+    max_results: int = DISCOVER_MAX_RESULTS
+) -> DiscoveryResultDict:
+    return await _discover_media(
+        media_service, MEDIA_TYPE_TELEVISION, genre_id, year, language, sort_by, page, max_results
+    )
+
+async def _discover_media(
+    media_service: MediaService,
+    media_type: MediaType,
+    genre_id: int | None,
+    year: int | None,
+    language: str | None,
+    sort_by: str | None,
+    page: int,
+    max_results: int,
 ) -> DiscoveryResultDict:
 
     # Validate parameters
-    _validate_discovery_params_internal(MEDIA_TYPE_TELEVISION, year, page, max_results, language, sort_by)
+    validate_discovery_params(
+        year=year, page=page, max_results=max_results, language=language, sort_by=sort_by
+    )
 
     # Call service
     media_list = await media_service.get_media(
-        media_type=MEDIA_TYPE_TELEVISION,
+        media_type=media_type,
         genre_id=genre_id,
         year=year,
         language=language,
@@ -183,76 +201,4 @@ async def fetch_television(
     )
 
     # Format for agent
-    return _format_media_list(media_list, media_service)
-
-def _validate_discovery_params_internal(
-    media_type: str,
-    year: int | None,
-    page: int,
-    max_results: int,
-    language: str | None,
-    sort_by: str | None
-) -> None:
-    """Validate discovery parameters (internal version).
-
-    Args:
-        media_type: Type of media
-        year: Optional year filter
-        page: Page number
-        max_results: Maximum results
-        language: Optional language code
-        sort_by: Sort order
-
-    Raises:
-        ValueError: If any parameter is invalid
-    """
-
-    if media_type not in [MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION]:
-        raise ValueError(f"media_type must be one of: {MEDIA_TYPE_FILM}, {MEDIA_TYPE_TELEVISION}")
-
-    if year is not None and year < 1900:
-        raise ValueError("year must be 1900 or later")
-
-    if page < 1:
-        raise ValueError("page must be 1 or greater")
-
-    if max_results < 1 or max_results > 100:
-        raise ValueError("max_results must be between 1 and 100")
-
-    if language is not None:
-        if not isinstance(language, str) or len(language) != 2 or not language.isalpha():
-            raise ValueError("language must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')")
-
-    if sort_by is not None and sort_by not in VALID_SORT_OPTIONS:
-        raise ValueError(f"sort_by must be one of: {', '.join(VALID_SORT_OPTIONS)}")
-
-
-def _format_media_list(media_list: MediaList, media_service: MediaService) -> DiscoveryResultDict:
-    """Format MediaList for agent consumption.
-
-    Args:
-        media_list: MediaList from service
-        media_service: Media service instance for getting provider name
-
-    Returns:
-        Dictionary formatted for agent
-    """
-
-    return {
-        "results": [
-            {
-                "id": media.id,
-                "media_type": media.media_type,
-                "title": media.title,
-                "date": media.date.isoformat() if media.date else None,
-                "rating": media.rating,
-                "description": media.description,
-                "genre_ids": media.genre_ids
-            }
-            for media in media_list.results
-        ],
-        "total_results": media_list.total_results,
-        "page": media_list.page,
-        "total_pages": media_list.total_pages,
-        "provider": media_service.get_provider_name()
-    }
+    return format_media_list(media_list, media_service)

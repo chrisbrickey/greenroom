@@ -11,8 +11,9 @@ import pytest
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
+from greenroom.services.media_limits import PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.service import TMDBService
-from greenroom.tools.discovery_tools import VALID_SORT_OPTIONS
+from greenroom.tools.discovery import VALID_SORT_OPTIONS
 
 pytestmark = pytest.mark.external
 
@@ -65,6 +66,18 @@ SAMPLE_LANGUAGE_CODE = "en"
 
 FIRST_PAGE = 1
 SECOND_PAGE = 2
+
+# Deliberately larger than the page we expect, so our own truncation cannot hide
+# a page that grew. The service does not validate max_results; the tool layer
+# does, and these tests sit below it.
+BEYOND_PAGE_SIZE = PROVIDER_PAGE_SIZE * 5
+
+# The provider's catalog changes while these tests run: two calls seconds apart
+# report different total_results, and an entry near a page boundary can drift
+# onto the neighbouring page. Assertions comparing two live responses tolerate
+# this much movement, which stays far below the whole page that a genuine
+# contract break would shift.
+MAX_CATALOG_DRIFT = 3
 
 
 def values_in_returned_order(media_list: MediaList, attribute: str) -> list[Any]:
@@ -133,6 +146,11 @@ async def test_provider_ignores_an_unsupported_sort_order_instead_of_rejecting_i
     whether the sort order was honoured. Should the provider ever start
     rejecting unknown sort orders, this test fails and these assertions can be
     simplified.
+
+    The fallback is established by comparison rather than by equality: the
+    catalog shifts between calls, so no two live responses match exactly. An
+    ignored sort order must return substantially the default page, and share
+    nothing with a deliberately opposite ordering.
     """
     ignored = await tmdb_service.get_media(
         media_type=media_type, sort_by=UNSUPPORTED_SORT_ORDER
@@ -140,8 +158,16 @@ async def test_provider_ignores_an_unsupported_sort_order_instead_of_rejecting_i
     default = await tmdb_service.get_media(
         media_type=media_type, sort_by=DEFAULT_SORT_ORDER
     )
+    opposite = await tmdb_service.get_media(
+        media_type=media_type, sort_by=ASCENDING_POPULARITY_SORT
+    )
 
-    assert media_ids_in_returned_order(ignored) == media_ids_in_returned_order(default)
+    ignored_ids = set(media_ids_in_returned_order(ignored))
+    default_ids = set(media_ids_in_returned_order(default))
+    opposite_ids = set(media_ids_in_returned_order(opposite))
+
+    assert len(ignored_ids & default_ids) >= PROVIDER_PAGE_SIZE - MAX_CATALOG_DRIFT
+    assert not ignored_ids & opposite_ids
 
 
 @pytest.mark.asyncio
@@ -250,11 +276,36 @@ async def test_provider_accepts_the_original_language_filter(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("media_type", MEDIA_TYPES)
+async def test_a_full_discover_page_holds_the_result_count_we_assume(
+    tmdb_service: TMDBService,
+    media_type: str
+) -> None:
+    """A full page holds exactly PROVIDER_PAGE_SIZE results.
+
+    MAX_RESULTS_MAX is defined as that number, so the ceiling the tools
+    advertise is only honest while this holds. Checked for discover as well as
+    search because nothing obliges a provider to page both flows alike.
+    """
+    result = await tmdb_service.get_media(
+        media_type=media_type, sort_by=DEFAULT_SORT_ORDER, max_results=BEYOND_PAGE_SIZE
+    )
+
+    assert result.total_pages > FIRST_PAGE, "need an unfiltered query spanning many pages"
+    assert len(result.results) == PROVIDER_PAGE_SIZE
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("media_type", MEDIA_TYPES)
 async def test_consecutive_pages_return_different_media(
     tmdb_service: TMDBService,
     media_type: str
 ) -> None:
-    """Pagination advances through the catalog rather than repeating a page."""
+    """Pagination advances through the catalog rather than repeating a page.
+
+    A handful of shared entries is expected rather than alarming: a title ranked
+    near the page boundary can slip onto the next page as the catalog updates
+    between the two calls. Repeating a page would show the whole page shared.
+    """
     first = await tmdb_service.get_media(
         media_type=media_type, sort_by=DEFAULT_SORT_ORDER, page=FIRST_PAGE
     )
@@ -266,4 +317,4 @@ async def test_consecutive_pages_return_different_media(
     second_ids = {item.id for item in second.results}
 
     assert first_ids and second_ids
-    assert not first_ids & second_ids
+    assert len(first_ids & second_ids) <= MAX_CATALOG_DRIFT

@@ -65,26 +65,55 @@ class MediaService(Protocol):
     async def get_media(
         self,
         media_type: MediaType,
-        genre_id: int | None = None,
-        year: int | None = None,
-        language: str | None = None,
-        sort_by: str | None = None,
-        page: int = 1,
-        max_results: int = 20
+        genre_id: int | None,
+        year: int | None,
+        language: str | None,
+        sort_by: str | None,
+        page: int,
+        max_results: int
     ) -> MediaList:
-        """Discover media matching the given criteria.
+        """Retrieve list of media matching the given criteria.
 
         Args:
             media_type: Type-safe group of media to discover
-            genre_id: Optional filter on genre provided via genre tools
-            year: Optional filter on year of release
-            language: Optional ISO 639-1 language code
-            sort_by: Optional sort order string that is provider-specific
-            page: Page number for pagination (1-indexed, defaults to 1)
-            max_results: Maximum number of results to return; defaults to 20
+            genre_id: Filter on genre provided via genre tools, or None
+            year: Filter on year of release, or None
+            language: ISO 639-1 language code, or None
+            sort_by: Sort order string that is provider-specific, or None
+            page: Page number for pagination (1-indexed)
+            max_results: Maximum number of results to return
 
         Returns:
             MediaList with standardized Media objects
+
+        Raises:
+            ValueError: For invalid parameters
+            APIResponseError: For service errors
+            APIConnectionError: For network errors
+        """
+        ...
+
+    async def search_media(
+        self,
+        media_type: MediaType,
+        query: str,
+        year: int | None,
+        display_language: str | None,
+        page: int,
+        max_results: int
+    ) -> MediaList:
+        """Search for one element (or short list) that matches the given title.
+
+        Args:
+            media_type: Type-safe group of media to search
+            query: Title text to search for
+            year: Filter on year of release, or None
+            display_language: ISO 639-1 code for the language of the returned text, or None
+            page: Page number for pagination (1-indexed)
+            max_results: Maximum number of results to return
+
+        Returns:
+            MediaList with standardized Media objects, ordered by provider relevance
 
         Raises:
             ValueError: For invalid parameters

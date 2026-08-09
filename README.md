@@ -45,6 +45,8 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 - **categorize_genres** - Maps human moods to media genres to improve hit rate from human prompts
 - **discover_films** - Retrieves list of films based on criteria, returning metadata for informed responses and optimized categorization 
 - **discover_television** - Retrieves list of television shows based on criteria, returning metadata for informed responses and optimized categorization
+- **search_films** - Looks up films by title, optionally narrowed by release year, returning the same metadata shape as discover_films
+- **search_television** - Looks up television shows by title, optionally narrowed by first air year, returning the same metadata shape as discover_television
 
 _MCP tools are callable actions, analogous to POST requests, that an agent executes. They are annotated with `@mcp.tool()` in the FastMCP framework._
 
@@ -113,20 +115,24 @@ greenroom/
 │       │
 │       ├── models/                  # data models     
 │       │
-│       ├── services/                # business logic 
-│       │   ├── llm/                 # LLM agent services and clients
-│       │   ├── tmdb/                # TMDB provider services and clients
-│       │   └── protocols.py         # standardizes methods across media providers
+│       ├── services/                    # business logic 
+│       │   ├── llm/                     # LLM agent services and clients
+│       │   ├── tmdb/                    # TMDB provider services and clients
+│       │   └── protocols.py             # standardizes methods across media providers
 │       │
-│       └── tools/                   # MCP tools (exposed via FastMCP)
-│            ├── agent_tools.py      # coordinate multiple agents and LLMs
-│            ├── discovery_tools.py  # search for specific entertainment content
-│            └── genre_tools.py      # optimize genre discovery and presentation to user
+│       └── tools/                       # MCP tools (exposed via FastMCP)
+│            ├── agent_tools.py          # coordinate multiple agents and LLMs
+│            ├── genre_tools.py          # optimize genre discovery and presentation to user
+│            └── discovery/              # retrieve specific entertainment content
+│                 ├── discover_tools.py  # browse media by filter criteria
+│                 ├── search_tools.py    # look up media by title
+│                 ├── validation.py      # shared checks on caller parameters
+│                 └── formatting.py      # shared shaping of the agent response
 │
-├── tests/greenroom/                 # test suite
+├── tests/greenroom/                     # test suite
 │
-├── pyproject.toml                   # configuration and dependencies
-└── uv.lock                          # dependency lock file (auto-generated)
+├── pyproject.toml                       # configuration and dependencies
+└── uv.lock                              # dependency lock file (auto-generated)
 ```
 
 ### Dependencies
