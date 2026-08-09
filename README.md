@@ -169,35 +169,32 @@ uv sync
 To use Ollama as a second agent (in addition to Claude). An example of usage is the **compare_llm_responses** tool.
 
 1. **Install Ollama**
-```
-# macOS
-brew install ollama
-
-# Or download from https://ollama.com/download
-```
+Download from https://ollama.com/download.
 
 2. **Start Ollama service**
+Open Ollama desktop application or start from terminal:
 ```
-# macOS (Ollama runs as a background service after installation)
 ollama serve
-
-# Or simply open the Ollama application
 ```
 
 3. **Pull the default model**
+The `compare_llm_responses` tool defaults to llama3.2:latest as of 2026.
 ```
-# The compare_llm_responses tool defaults to llama3.2:latest
 ollama pull llama3.2
+```
 
-# Verify the model is available
+Verify the model is available.
+```
 ollama list
 ```
 
 4. **Test Ollama is working**
 ```
- curl http://localhost:11434/api/generate -d '{"model": "llama3.2", "prompt": "Why is the sky blue?", "stream": false}'
- 
- # expected response might be something like
+curl http://localhost:11434/api/generate -d '{"model": "llama3.2", "prompt": "Why is the sky blue?", "stream": false}'
+```
+
+Expected response will look something like the below.
+```
  {
    "model":"llama3.2",
    "created_at":"2025-11-30T12:01:32.314915Z",
@@ -212,13 +209,9 @@ ollama list
 The server will start and communicate via stdin/stdout. It uses stdio by default, which is the standard transport for local MCP servers.
 
 ```
-# best approach uses the MCP entry point
-uv run greenroom
-```
+uv run greenroom                        # recommended: uses the MCP entry point
 
-```
-# alternative: via python
-uv run python src/greenroom/server.py
+uv run python src/greenroom/server.py   # alternative: via python
 ```
 
 _NB: You should not run the server directly (e.g. `uv run <path to server.py>`) because the server is part of a python package.
@@ -230,27 +223,21 @@ npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run
 ```
 
 ### Run tests
+The test suite includes a kickoff of the mypy type checker.
 ```
-uv run python -m pytest
-
-# alternative to printout test names for quicker debugging
-uv run python -m pytest -v
-
-# only run static type checker
-uv run mypy src/greenroom/
+uv run pytest 
 ```
+_Adding `-v` flag to the end of that command will printout test names for quicker debugging._
 
 ## Interacting with the MCP Server
-
-This project does not yet include a frontend with which to exercise the server, but you can use anthropic tooling to interact with the server.
 
 ### via Claude Code
 
 1. Start the server
-   ```
-   # update local claude settings and run the MCP server
-   claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
-   ```
+  Update local claude settings and run the MCP server.
+  ```
+  claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+  ```
 
 2. Open claude code
    - Enter `/mcp` to view available MCP servers. 
@@ -276,9 +263,9 @@ This project does not yet include a frontend with which to exercise the server, 
    - The greenroom server should be listed there and it should have status: running.
    - If it is not running, click on 'Edit Config'. Then follow the instructions in the Troubleshooting section below.
 
-### Troubleshooting
+## Troubleshooting
 
-  **Confirm correctness of local claude settings / configuration.**
+**Confirm correctness of local claude settings / configuration.**
 
   When you run the set up command (`claude mcp add`), a configuration for that MCP server is added to your local claude settings.
   Claude stores them in a file called `claude_desktop_config.json`.
@@ -286,7 +273,7 @@ This project does not yet include a frontend with which to exercise the server, 
 
   - Align your local configuration with the below.
   - Replace `/ABSOLUTE/PATH/TO/PROJECT` with the actual path to the project directory (not the package directory) on your local machine.
-  - Replace `/ABSOLUTE/PATH/TO/UV/LIBRARY` with the actual path to uv on your local machine.
+  - Replace `/ABSOLUTE/PATH/TO/UV/LIBRARY` with the actual path to uv on your local machine. On mac, `which uv` should print out this directory.
 
   ```json
   {
@@ -305,14 +292,17 @@ This project does not yet include a frontend with which to exercise the server, 
   }
   ```
 
-  **When experiencing configuration issues**, sometimes it helps to remove the mcp server from your local machine and add it back again.
-  ```
-  # remove the local configuration
-  claude mcp remove greenroom
+**When experiencing configuration issues**, sometimes it helps to remove the mcp server from your local machine and add it back again.
 
-  # update the local configuration and run the MCP server
-  claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
-  ```
+1. Remove the local configuration.
+```
+claude mcp remove greenroom
+```
+
+2. Update the local configuration and run the MCP server.
+```
+claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+```
 
 ## How It Works
 
