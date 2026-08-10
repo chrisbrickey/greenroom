@@ -58,43 +58,43 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
         "total_pages": 5,
         "results": [
             {
-                "id": 550,
-                "title": "Fight Club",
-                "release_date": "1999-10-15",
-                "vote_average": 8.4,
-                "overview": "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression.",
+                "id": 1,
+                "title": "Test Film One",
+                "release_date": "2024-01-01",
+                "vote_average": 7.5,
+                "overview": "Sample description for the first sample film.",
                 "genre_ids": [18, 53],
                 "poster_path": "/path.jpg"
             },
             {
-                "id": 680,
-                "title": "Pulp Fiction",
-                "release_date": "1994-09-10",
-                "vote_average": 8.5,
-                "overview": "A burger-loving hit man, his philosophical partner, and a drug-addled gangster's moll.",
+                "id": 2,
+                "title": "Test Film Two",
+                "release_date": "2024-02-02",
+                "vote_average": 8.0,
+                "overview": "Sample description for the second sample film.",
                 "genre_ids": [80, 18],
-                "popularity": 65.3
+                "popularity": 50.0
             }
         ]
     }
 
     httpx_mock.add_response(
-        url="https://api.themoviedb.org/3/discover/movie?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres=18&primary_release_year=1999",
+        url="https://api.themoviedb.org/3/discover/movie?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres=18&primary_release_year=2024",
         json=mock_response
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=1999, page=1)
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=2024, page=1)
 
     assert result.page == 1
     assert result.total_results == 100
     assert result.total_pages == 5
     assert len(result.results) == 2
-    assert result.results[0].title == "Fight Club"
-    assert result.results[0].rating == 8.4
+    assert result.results[0].title == "Test Film One"
+    assert result.results[0].rating == 7.5
     assert result.results[0].genre_ids == [18, 53]
     assert result.results[0].media_type == MEDIA_TYPE_FILM
-    assert result.results[1].title == "Pulp Fiction"
+    assert result.results[1].title == "Test Film Two"
 
 
 @pytest.mark.asyncio
@@ -108,42 +108,42 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
         "total_pages": 3,
         "results": [
             {
-                "id": 1399,
-                "name": "Game of Thrones",
-                "first_air_date": "2011-04-17",
-                "vote_average": 8.4,
-                "overview": "Seven noble families fight for control of the mythical land of Westeros.",
+                "id": 3,
+                "name": "Test Show One",
+                "first_air_date": "2024-03-03",
+                "vote_average": 7.8,
+                "overview": "Sample description for the first sample television show.",
                 "genre_ids": [10765, 18, 10759],
             },
             {
-                "id": 1396,
-                "name": "Breaking Bad",
-                "first_air_date": "2008-01-20",
-                "vote_average": 8.9,
-                "overview": "A high school chemistry teacher turned meth manufacturer.",
+                "id": 4,
+                "name": "Test Show Two",
+                "first_air_date": "2024-04-04",
+                "vote_average": 8.2,
+                "overview": "Sample description for the second sample television show.",
                 "genre_ids": [18, 80],
             }
         ]
     }
 
     httpx_mock.add_response(
-        url="https://api.themoviedb.org/3/discover/tv?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres=18&first_air_date_year=2011",
+        url="https://api.themoviedb.org/3/discover/tv?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres=18&first_air_date_year=2024",
         json=mock_response
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2011, page=1)
+    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2024, page=1)
 
     assert result.page == 1
     assert result.total_results == 50
     assert result.total_pages == 3
     assert len(result.results) == 2
-    assert result.results[0].title == "Game of Thrones"
-    assert result.results[0].rating == 8.4
+    assert result.results[0].title == "Test Show One"
+    assert result.results[0].rating == 7.8
     assert result.results[0].genre_ids == [10765, 18, 10759]
     assert result.results[0].media_type == MEDIA_TYPE_TELEVISION
-    assert result.results[0].date.isoformat() == "2011-04-17"
-    assert result.results[1].title == "Breaking Bad"
+    assert result.results[0].date.isoformat() == "2024-03-03"
+    assert result.results[1].title == "Test Show Two"
 
 
 @pytest.mark.asyncio

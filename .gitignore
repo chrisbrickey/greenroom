@@ -7,9 +7,13 @@ __pycache__/
 venv/
 env/
 
+# agents
+.claude/
+.codex/
+.vibe/
+
 # IDE
 .idea/
-.claude/
 
 # macOS
 .DS_Store
