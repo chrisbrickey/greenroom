@@ -13,6 +13,14 @@ from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDB_TELEVISION_CON
 from greenroom.services.tmdb.models import TMDBGenre
 
 
+# Sort order applied when the caller does not request one
+DEFAULT_SORT_ORDER = "popularity.desc"
+
+# Provider-agnostic sort field exposed by the tools. TMDB names its date field
+# differently per media type, so this is translated before the request is sent.
+GENERIC_DATE_SORT_FIELD = "date"
+
+
 class TMDBService:
     """
     This service encapsulates TMDB-specific logic including
@@ -118,7 +126,7 @@ class TMDBService:
             Dictionary of TMDB query parameters
         """
         params = {
-            "sort_by": sort_by if sort_by is not None else "popularity.desc",
+            "sort_by": self._to_provider_sort_order(sort_by, config),
             "page": page,
             "include_adult": False, # Exclude pornographic content
             "include_video": False  # Exclude video-only content
@@ -134,6 +142,30 @@ class TMDBService:
             params["with_original_language"] = language
 
         return params
+
+    def _to_provider_sort_order(self, sort_by: str | None, config: TMDBMediaConfig) -> str:
+        """Translate a provider-agnostic sort order into TMDB's vocabulary.
+
+        The tools expose "date.asc" and "date.desc" so that callers need not know
+        whether they are sorting films or television. TMDB rejects "date" and
+        expects "release_date" for films and "first_air_date" for television.
+        Every other sort order is already TMDB-native and passes through.
+
+        Args:
+            sort_by: Requested sort order, or None for the default
+            config: TMDB media configuration supplying the date field name
+
+        Returns:
+            Sort order string accepted by the TMDB discover endpoints
+        """
+        if sort_by is None:
+            return DEFAULT_SORT_ORDER
+
+        field, separator, direction = sort_by.partition(".")
+        if field == GENERIC_DATE_SORT_FIELD:
+            return f"{config.date_sort_prefix}{separator}{direction}"
+
+        return sort_by
 
     def _parse_response(self, raw_results: list, config: TMDBMediaConfig) -> list:
         """Parse TMDB response using Pydantic models.

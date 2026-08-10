@@ -225,7 +225,9 @@ npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run
 ### Run tests
 The test suite includes a kickoff of the mypy type checker.
 ```
-uv run pytest 
+uv run pytest               # fast unit and integration tests; excludes external tests that make real network calls
+
+uv run pytest -m external   # tests that make real network calls to confirm contracts
 ```
 _Adding `-v` flag to the end of that command will printout test names for quicker debugging._
 
