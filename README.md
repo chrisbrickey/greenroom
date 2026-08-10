@@ -35,38 +35,33 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 
 ### Compare the output of multiple agents
 - `Using compare_llm_responses, what makes a great science fiction film?`
-- `Using the compare_llm_reponses tool, how is machine learning used in modern filmmaking?`
+- `Using the compare_llm_responses tool, how is machine learning used in modern filmmaking?`
 
 ## Features
 
 ### Tools
-MCP tools are callable actions, analogous to POST requests, that an agent executes.
-They are annotated with `@mcp.tool()` in the FastMCP framework.
 
-Tools for the greenroom server include:
 - **list_genres** - Fetches all entertainment genres, returning a unified map showing which media types support each genre
 - **categorize_genres** - Maps human moods to media genres to improve hit rate from human prompts
-- **discover_films** - Retrieves films based on discovery criteria, returning metadata for informed reponses and improved categorization 
-- **discover_television** - Retrieves television shows based on discovery criteria, returning metadata for informed responses and improved categorization
+- **discover_films** - Retrieves list of films based on criteria, returning metadata for informed responses and optimized categorization 
+- **discover_television** - Retrieves list of television shows based on criteria, returning metadata for informed responses and optimized categorization
 
-_NB: The `@mcp.tool()` decorator wraps the function into a FunctionTool object, which prevents it from being called directly including by tests. The logic of tool methods is delegated to helpers methods, which are covered by the test suite._
+_MCP tools are callable actions, analogous to POST requests, that an agent executes. They are annotated with `@mcp.tool()` in the FastMCP framework._
 
 ### Coordination of Agents
 This server supports the coordination of multiple agents to work on a single task. 
 
 - **compare_llm_responses** - Receives a prompt and fields it out to two agents. It constrains the responses by temperature and token limit.
 
-```
-To trigger this tool, ask Claude: Using the compare_llm_reponses tool, why is the ocean blue?
+> To trigger this tool, ask the agent: Using the compare_llm_responses tool, why is the ocean blue?
+>
+> You should see: 
+>   Both a resampled response and an ollama response 
+>   Response lengths comparison
+>   Structured JSON output showing both LLM outputs side-by-side
 
-You should see: 
-  Both Claude* and Ollama responses 
-  Response lengths comparison
-  Structured JSON output showing both LLM outputs side-by-side
-```
-_As of 2026, this defaults to comparing the response from a resampling of the anthropic client to a response from a new ollama client. 
-Generally, the resampled response will be null because anthropic forbids resampling.
-I hope to broaden the capabilities to a wider selection of LLM clients soon._
+_As of 2026, this defaults to comparing the response from a resampling of the current client to a response from a new ollama client. 
+If you use the server with Claude, the resampled response will be null because Anthropic forbids resampling._
 
 ### Contexts
 Context-aware tools use FastMCP's `Context` parameter to access advanced MCP features like LLM sampling.
@@ -75,7 +70,7 @@ Example:
 - **list_genres_simplified** - Returns a simplified list of genre names by using `ctx.sample()` to leverage the agent's LLM capabilities for data transformation.
 
 ### Resources
-These resources provide read-only data, analogous to GET requests. An agent reads the information but does not performa actions. 
+These resources provide read-only data, analogous to GET requests. An agent reads the information but does not perform actions. 
 Resources are annotated with `@mcp.resource()` in the FastMCP framework.
 - **config://version** - Get server version
 
@@ -85,8 +80,8 @@ This means MCP callers can catch `GreenroomError` to handle any server-side fail
 
 - **APIResponseError** - HTTP errors, invalid JSON, unexpected response bodies from external APIs
 - **APIConnectionError** - Network or connectivity failures when reaching external APIs
-- **APITypeError** - Response had an unexpected Python type after deserialization
-- **SamplingError** - Errors during LLL sampling
+- **APITypeError** - Response had an unexpected python type after deserialization
+- **SamplingError** - Errors during LLM sampling
 
 Built-in exceptions like `ValueError` are still raised for input validation (e.g., invalid parameters).
 
@@ -107,7 +102,7 @@ This project follows the python package src/ layout to support convenient packag
 Below is a simplified diagram of the project.
 
 ```
-greenroom/                          # project root
+greenroom/
 ├── src/
 │   └── greenroom/                   # python package
 │       │
@@ -134,18 +129,18 @@ greenroom/                          # project root
 └── uv.lock                          # dependency lock file (auto-generated)
 ```
 
-## Dependencies
+### Dependencies
 
-- **Python 3.12**
-- **FastMCP >=2.13.0** - MCP server framework; requires Python 3.10+
-- **uv** -  package manager; [installation instructions](https://github.com/astral-sh/uv#installation)
-- **Hatchling** - build system
-- **httpx** - for API calls to TMDB (community-driven database)
-- **python-dotenv** - for API key management
-- **Ollama** (optional) - local LLM runtime for multi-agent tools like compare_llm_responses; [installation instructions](https://ollama.com/download)
+- **python >=3.10**
+- **FastMCP >=2.13.0**; MCP server framework; requires python 3.10+
+- **uv**: package manager
+- **Hatchling**: build system
+- **httpx**: network calls to external data sources
+- **python-dotenv**: API key management
+- **ollama** (optional): local LLM runtime for multi-agent tools like `compare_llm_responses`
 
-_This project uses the **FastMCP** framework, which requires less boilerplate than other frameworks (e.g., MCP Python SDK)._
-_See [mcp-server-1](https://github.com/chrisbrickey/mcp-server-1) for examples where functionality is more explicit._
+_I chose **FastMCP** framework for this project, because it requires minimal boilerplate.
+In previous projects, I used alternative frameworks like MCP Python SDK to understand more fundamental mechanics._
 
 ## Setup
 
@@ -165,14 +160,14 @@ uv sync
 - Copy the content of `.env.example` to your new file.
 - Replace `your_tmdb_api_key_here` in .env with the actual TMDB API key.
 
-### (optional) Setup Ollama
-To use Ollama as a second agent (in addition to Claude). An example of usage is the **compare_llm_responses** tool.
+### (optional) Setup ollama
+To use ollama as a second agent (in addition to Claude). An example of usage is the **compare_llm_responses** tool.
 
-1. **Install Ollama**
+1. **Install ollama**
 Download from https://ollama.com/download.
 
-2. **Start Ollama service**
-Open Ollama desktop application or start from terminal:
+2. **Start ollama service**
+Open ollama desktop application or start from terminal:
 ```
 ollama serve
 ```
@@ -188,7 +183,7 @@ Verify the model is available.
 ollama list
 ```
 
-4. **Test Ollama is working**
+4. **Test ollama is working**
 ```
 curl http://localhost:11434/api/generate -d '{"model": "llama3.2", "prompt": "Why is the sky blue?", "stream": false}'
 ```
@@ -203,77 +198,99 @@ Expected response will look something like the below.
  }
 ```
 
+## Usage
+
+Regardless of your preferred platform, exercising the server is fairly standardized.
+- `/mcp` will display the server with access to the list of tools and their descriptions.
+- Tools will automatically be used during conversations.
+- To explicitly test a tool, ask that agent to call the tool. e.g. `Call the <name-of-tool> tool from the greenroom MCP server to answer the following:...`
+- If you update any tools, you must `/reload` a session for the updates to become available.
+
+### via vibe CLI
+
+1. Add the server configuration to a local toml file
+   - Create `.vibe/` directory at the top-level of the project. Create `config.toml` file within that directory. 
+   - Add the below to `config.toml`.
+    ```toml
+    [[mcp_servers]]
+    name = "greenroom"
+    transport = "stdio"
+    command = "uv"
+    args = [
+      "--directory",
+      "/ABSOLUTE/PATH/TO/PROJECT",
+      "run",
+      "python",
+      "src/greenroom/server.py"
+    ]
+    startup_timeout_sec = 15.0
+    ```
+2. Exercise in vibe CLI
+   - `vibe` to open a fresh session (or `/reload` within an open session)
+   - Type `/mcp` to view available MCP servers. 
+   - Confirm that greenroom is one of them with status: connected.
+
+### via claude CLI
+
+1. Update local claude settings and start the server
+  ```
+  claude mcp add greenroom --scope project -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+  ```
+
+2. Exercise in claude CLI
+   - `claude` to open a fresh session (or `/reload` within an open session)
+   - Type `/mcp` to view available MCP servers. 
+   - Confirm that greenroom is one of them with status: connected.
+
+### via claude desktop app
+
+1. Open the claude desktop app.
+
+2. Confirm the desktop app is connected to the greenroom server:
+   - Navigate to Settings.
+   - Click on "Developer". Local MCP Servers should appear.
+   - The greenroom server should be listed there and it should have status: running.
+   - If it is not running, click on 'Edit Config'. Then follow the instructions in the Troubleshooting section below.
+
 ## Development
 
-### Run the MCP Server Locally
+**Run the MCP Server Locally**
 The server will start and communicate via stdin/stdout. It uses stdio by default, which is the standard transport for local MCP servers.
 
 ```
 uv run greenroom                        # recommended: uses the MCP entry point
 
-uv run python src/greenroom/server.py   # alternative: via python
+uv run python src/greenroom/server.py   # alternative
 ```
 
 _NB: You should not run the server directly (e.g. `uv run <path to server.py>`) because the server is part of a python package.
 Running it directly would break the module resolution._
 
-### Inspect using MCP Inspector (web ui)
+**Inspect using MCP Inspector (web ui)**
 ```
 npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
 ```
 
-### Run tests
+**Run tests**
 The test suite includes a kickoff of the mypy type checker.
 ```
 uv run pytest               # fast unit and integration tests; excludes external tests that make real network calls
 
 uv run pytest -m external   # tests that make real network calls to confirm contracts
 ```
-_Adding `-v` flag to the end of that command will printout test names for quicker debugging._
 
-## Interacting with the MCP Server
-
-### via Claude Code
-
-1. Start the server
-  Update local claude settings and run the MCP server.
-  ```
-  claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
-  ```
-
-2. Open claude code
-   - Enter `/mcp` to view available MCP servers. 
-   - Confirm that greenroom is one of them with status: connected.
-
-3. Exercise the server
-   - Resources can be referenced with @ mentions
-   - Tools will automatically be used during the conversation
-   - Prompts show up as / slash commands
-   - To explicitly test a tool, ask claude to call the tool. e.g. `Call the <name-of-tool> tool from the MCP server called greenroom.`
-
-> When you update the methods on the MCP server, you must rerun the above steps in order for the updates to be available to the claude session.
-
-### via Claude Desktop
-
-1. Download Claude Desktop app [here](https://claude.com/download).
-
-2. Open the claude desktop app.
-
-3. Confirm the desktop app is connected to the greenroom server:
-   - Navigate to Settings.
-   - Click on "Developer". Local MCP Servers should appear.
-   - The greenroom server should be listed there and it should have status: running.
-   - If it is not running, click on 'Edit Config'. Then follow the instructions in the Troubleshooting section below.
+_NB: The `@mcp.tool()` decorator wraps functions into a FunctionTool objects, which prevents the decorated function from being callable as a plain function. So I delegated the logic within each tool to helper methods which the test suite call directly. That's how I maintained test coverage on validation and formatting without server setup. The remaining registration layer of each tool is covered separately by `test_tool_registration.py` which builds an in-memory FastMCP server to verify the tool names, parameter schemas, and the arguments each tool forwards to its helper._
 
 ## Troubleshooting
 
-**Confirm correctness of local claude settings / configuration.**
+### claude CLI troubleshooting
 
-  When you run the set up command (`claude mcp add`), a configuration for that MCP server is added to your local claude settings.
-  Claude stores them in a file called `claude_desktop_config.json`.
-  These settings are what will be used by the claude desktop app to connect to the MCP server.
+**Confirm correctness of the local claude configuration.**
 
-  - Align your local configuration with the below.
+  When you run the setup command (`claude mcp add ... --scope project`), a configuration for that MCP server is added to a `.mcp.json` file at the project root.
+  _This is a different than the configuration file that the claude desktop app uses._
+
+  - Align your local `.mcp.json` with the below.
   - Replace `/ABSOLUTE/PATH/TO/PROJECT` with the actual path to the project directory (not the package directory) on your local machine.
   - Replace `/ABSOLUTE/PATH/TO/UV/LIBRARY` with the actual path to uv on your local machine. On mac, `which uv` should print out this directory.
 
@@ -303,13 +320,48 @@ claude mcp remove greenroom
 
 2. Update the local configuration and run the MCP server.
 ```
-claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
+claude mcp add greenroom --scope project -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
 ```
 
-## How It Works
+### claude desktop app troubleshooting
+
+**Confirm correctness of local claude desktop configuration**
+
+  Clicking "Edit Config" in the Developer settings (see the Usage section above) opens `claude_desktop_config.json` in your default text editor. 
+  _This is a different configuration file than the CLI uses and it applies globally across every project opened in the desktop app rather than to a single project._
+
+  - On Mac, this file generally lives at `~/Library/Application Support/Claude/claude_desktop_config.json`.
+  - Replace `/ABSOLUTE/PATH/TO/PROJECT` with the actual path to the project directory (not the package directory) on your local machine.
+  - Replace `/ABSOLUTE/PATH/TO/UV/LIBRARY` with the actual path to uv on your local machine. On mac, `which uv` should print out this directory.
+
+  ```json
+  {
+    "mcpServers": {
+      "greenroom": {
+        "command": "/ABSOLUTE/PATH/TO/UV/LIBRARY",
+        "args": [
+          "--directory",
+          "/ABSOLUTE/PATH/TO/PROJECT",
+          "run",
+          "python",
+          "src/greenroom/server.py"
+        ]
+      }
+    }
+  }
+  ```
+
+**When experiencing configuration issues**, sometimes it helps to remove the mcp server entry and add it back again.
+
+1. Remove the `greenroom` entry from `claude_desktop_config.json` and save the file.
+2. Re-add the `greenroom` entry (matching the JSON above) and save the file.
+3. Fully quit and reopen the claude desktop app for the change to take effect.
+
+
+### Underlying Mechanics
 
 1. The `pyproject.toml` file declares the `fastmcp` dependency managed by uv
-2. When an agent (e.g. claude code) starts, it launches this MCP server as a subprocess using the configured command
+2. When an agent starts, it launches this MCP server as a subprocess using the configured command
 3. `uv` automatically manages the virtual environment and dependencies
 4. The server advertises its available resources and tools (e.g. the `tools/list` JSON-RPC method)
 5. During conversations, the agent can automatically call these tools when relevant
@@ -319,4 +371,4 @@ claude mcp add greenroom -- uv --directory /ABSOLUTE/PATH/TO/PROJECT run python 
 ## Future Development
 - Add more media types (e.g., podcasts, books)
 - Add providers to augment data sources
-- Create an entertainment concierge experience (e.g., manager agent flow)
+- Add an entertainment concierge experience (e.g., manager agent flow)
