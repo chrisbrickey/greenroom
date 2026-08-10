@@ -30,6 +30,13 @@ dev = [
     "mypy>=1.0",
 ]
 
+[tool.pytest.ini_options]
+markers = [
+    "external: makes real network calls to a third-party API; deselected by default, run with -m external",
+]
+# Keep the default `uv run pytest` fast and offline. A command-line -m overrides this.
+addopts = "-m 'not external'"
+
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true

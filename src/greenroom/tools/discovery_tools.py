@@ -9,6 +9,15 @@ from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 
+# Sort orders the discovery tools accept. These are provider-agnostic: the
+# service translates them into the vocabulary of whichever provider it wraps.
+VALID_SORT_OPTIONS = (
+    "popularity.desc", "popularity.asc",
+    "vote_average.desc", "vote_average.asc",
+    "date.desc", "date.asc",
+)
+
+
 def register_discovery_tools(mcp: FastMCP) -> None:
     """Register media discovery tools with the MCP server."""
 
@@ -214,14 +223,8 @@ def _validate_discovery_params_internal(
         if not isinstance(language, str) or len(language) != 2 or not language.isalpha():
             raise ValueError("language must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')")
 
-    if sort_by is not None:
-        valid_sort_options = [
-            "popularity.desc", "popularity.asc",
-            "vote_average.desc", "vote_average.asc",
-            "date.desc", "date.asc"
-        ]
-        if sort_by not in valid_sort_options:
-            raise ValueError(f"sort_by must be one of: {', '.join(valid_sort_options)}")
+    if sort_by is not None and sort_by not in VALID_SORT_OPTIONS:
+        raise ValueError(f"sort_by must be one of: {', '.join(VALID_SORT_OPTIONS)}")
 
 
 def _format_media_list(media_list: MediaList, media_service: MediaService) -> DiscoveryResultDict:

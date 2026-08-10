@@ -11,6 +11,15 @@ from greenroom.services.protocols import MediaService
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 
+# Response body for tests that assert on the outgoing request rather than the results
+EMPTY_DISCOVER_RESPONSE = {
+    "page": 1,
+    "total_results": 0,
+    "total_pages": 0,
+    "results": []
+}
+
+
 # =============================================================================
 # Protocol conformance tests
 # =============================================================================
@@ -302,6 +311,67 @@ async def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock)
     # Verify the URL included the language parameter
     request = httpx_mock.get_requests()[0]
     assert "with_original_language=es" in str(request.url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "media_type,requested_sort,expected_sort",
+    [
+        (MEDIA_TYPE_FILM, "date.desc", "release_date.desc"),
+        (MEDIA_TYPE_FILM, "date.asc", "release_date.asc"),
+        (MEDIA_TYPE_TELEVISION, "date.desc", "first_air_date.desc"),
+        (MEDIA_TYPE_TELEVISION, "date.asc", "first_air_date.asc"),
+    ]
+)
+async def test_get_media_translates_date_sort_to_provider_field(
+    monkeypatch,
+    httpx_mock: HTTPXMock,
+    media_type: str,
+    requested_sort: str,
+    expected_sort: str
+) -> None:
+    """Test that the generic date sort order becomes TMDB's per-media-type date field.
+
+    The tools expose a provider-agnostic "date" sort order, but TMDB names its
+    date field differently for films and television and rejects "date" itself.
+    """
+    monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
+
+    httpx_mock.add_response(json=EMPTY_DISCOVER_RESPONSE)
+
+    service = TMDBService()
+    await service.get_media(media_type=media_type, sort_by=requested_sort)
+
+    request = httpx_mock.get_requests()[0]
+    assert f"sort_by={expected_sort}" in str(request.url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "media_type,requested_sort",
+    [
+        (MEDIA_TYPE_FILM, "popularity.asc"),
+        (MEDIA_TYPE_FILM, "vote_average.desc"),
+        (MEDIA_TYPE_TELEVISION, "popularity.desc"),
+        (MEDIA_TYPE_TELEVISION, "vote_average.asc"),
+    ]
+)
+async def test_get_media_forwards_provider_native_sort_unchanged(
+    monkeypatch,
+    httpx_mock: HTTPXMock,
+    media_type: str,
+    requested_sort: str
+) -> None:
+    """Test that sort orders TMDB already understands are forwarded unchanged."""
+    monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
+
+    httpx_mock.add_response(json=EMPTY_DISCOVER_RESPONSE)
+
+    service = TMDBService()
+    await service.get_media(media_type=media_type, sort_by=requested_sort)
+
+    request = httpx_mock.get_requests()[0]
+    assert f"sort_by={requested_sort}" in str(request.url)
 
 
 def test_get_media_raises_value_error_when_api_key_missing(monkeypatch):
