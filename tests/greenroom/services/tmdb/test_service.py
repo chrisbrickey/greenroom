@@ -19,6 +19,9 @@ EMPTY_DISCOVER_RESPONSE = {
     "results": []
 }
 
+# A page other than the default, for checking the page argument reaches TMDB
+REQUESTED_PAGE = 2
+
 
 # =============================================================================
 # Protocol conformance tests
@@ -281,6 +284,43 @@ async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXM
     assert "sort_by=popularity.desc" in str(request.url)
     assert "page=1" in str(request.url)
     assert "include_adult=false" in str(request.url)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "media_type,endpoint",
+    [
+        (MEDIA_TYPE_FILM, "movie"),
+        (MEDIA_TYPE_TELEVISION, "tv"),
+    ]
+)
+async def test_get_media_requests_the_page_it_was_given(
+    monkeypatch,
+    httpx_mock: HTTPXMock,
+    media_type,
+    endpoint
+):
+    """Test that a page other than the default is sent to TMDB.
+
+    Every other test here requests page 1, which a dropped page argument would
+    still satisfy.
+    """
+    monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
+
+    httpx_mock.add_response(
+        url=(
+            f"https://api.themoviedb.org/3/discover/{endpoint}"
+            f"?api_key=test_api_key&sort_by=popularity.desc&page={REQUESTED_PAGE}"
+            "&include_adult=false&include_video=false"
+        ),
+        json=EMPTY_DISCOVER_RESPONSE
+    )
+
+    service = TMDBService()
+    await service.get_media(media_type=media_type, page=REQUESTED_PAGE)
+
+    request = httpx_mock.get_requests()[0]
+    assert f"page={REQUESTED_PAGE}" in str(request.url)
 
 
 @pytest.mark.asyncio
