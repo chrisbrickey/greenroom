@@ -18,7 +18,7 @@ from fastmcp.exceptions import ToolError
 
 from greenroom.tools import register_all_tools
 from greenroom.tools.agent_tools import register_agent_tools
-from greenroom.tools.discovery_tools import register_discovery_tools
+from greenroom.tools.discovery import register_all_discovery_tools
 from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
@@ -40,7 +40,7 @@ def discovery_server(monkeypatch) -> FastMCP:
     monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
 
     mcp = FastMCP("test-server")
-    register_discovery_tools(mcp)
+    register_all_discovery_tools(mcp)
     return mcp
 
 

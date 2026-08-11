@@ -104,29 +104,29 @@ Below is a simplified diagram of the project.
 ```
 greenroom/
 ├── src/
-│   └── greenroom/                   # python package
+│   └── greenroom/                       # python package
 │       │
-│       ├── server.py                # primary entry point to server
-│       ├── config.py                # centralized configuration
-│       ├── utils.py                 # shared utilities
+│       ├── server.py                    # primary entry point to server
+│       ├── config.py                    # centralized configuration
+│       ├── utils.py                     # shared utilities
 │       │
 │       │
-│       ├── models/                  # data models     
+│       ├── models/                      # data models     
 │       │
-│       ├── services/                # business logic 
-│       │   ├── llm/                 # LLM agent services and clients
-│       │   ├── tmdb/                # TMDB provider services and clients
-│       │   └── protocols.py         # standardizes methods across media providers
+│       ├── services/                    # business logic 
+│       │   ├── llm/                     # LLM agent services and clients
+│       │   ├── tmdb/                    # TMDB provider services and clients
+│       │   └── protocols.py             # standardizes methods across media providers
 │       │
-│       └── tools/                   # MCP tools (exposed via FastMCP)
-│            ├── agent_tools.py      # coordinate multiple agents and LLMs
-│            ├── discovery_tools.py  # search for specific entertainment content
-│            └── genre_tools.py      # optimize genre discovery and presentation to user
+│       └── tools/                       # MCP tools (exposed via FastMCP)
+│            ├── agent_tools.py          # coordinate multiple agents and LLMs
+│            ├── genre_tools.py          # optimize genre discovery and presentation to user
+│            └── discovery/              # tools for retrieving entertainment content
 │
-├── tests/greenroom/                 # test suite
+├── tests/greenroom/                     # test suite
 │
-├── pyproject.toml                   # configuration and dependencies
-└── uv.lock                          # dependency lock file (auto-generated)
+├── pyproject.toml                       # configuration and dependencies
+└── uv.lock                              # dependency lock file (auto-generated)
 ```
 
 ### Dependencies
@@ -254,7 +254,8 @@ Regardless of your preferred platform, exercising the server is fairly standardi
 
 ## Development
 
-**Run the MCP Server Locally**
+**Run the MCP server locally**
+
 The server will start and communicate via stdin/stdout. It uses stdio by default, which is the standard transport for local MCP servers.
 
 ```
@@ -267,11 +268,13 @@ _NB: You should not run the server directly (e.g. `uv run <path to server.py>`) 
 Running it directly would break the module resolution._
 
 **Inspect using MCP Inspector (web ui)**
+
 ```
 npx @modelcontextprotocol/inspector uv --directory /ABSOLUTE/PATH/TO/PROJECT run python src/greenroom/server.py
 ```
 
 **Run tests**
+
 The test suite includes a kickoff of the mypy type checker.
 ```
 uv run pytest               # fast unit and integration tests; excludes external tests that make real network calls
@@ -279,7 +282,9 @@ uv run pytest               # fast unit and integration tests; excludes external
 uv run pytest -m external   # tests that make real network calls to confirm contracts
 ```
 
-_NB: The `@mcp.tool()` decorator wraps functions into a FunctionTool objects, which prevents the decorated function from being callable as a plain function. So I delegated the logic within each tool to helper methods which the test suite call directly. That's how I maintained test coverage on validation and formatting without server setup. The remaining registration layer of each tool is covered separately by `test_tool_registration.py` which builds an in-memory FastMCP server to verify the tool names, parameter schemas, and the arguments each tool forwards to its helper._
+_Design Note: The `@mcp.tool()` decorator wraps functions into a FunctionTool objects, which prevents the decorated function from being callable as a plain function.
+To ease testability and provide modular interfaces, I delegated the logic within each tool to high-level public orchestration methods, which can be tested without spinning up a server and which use shared utility modules.
+The remaining top-level registration layer of each tool is covered separately by registration tests, which build an in-memory FastMCP server to verify the tool names, parameter schemas, and the arguments each tool forwards to its delegate._
 
 ## Troubleshooting
 
