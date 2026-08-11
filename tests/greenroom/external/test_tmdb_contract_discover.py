@@ -14,7 +14,8 @@ import pytest
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import PROVIDER_PAGE_SIZE
-from greenroom.services.tmdb.service import DEFAULT_SORT_ORDER, TMDBService
+from greenroom.services.tmdb.params import DEFAULT_SORT_ORDER
+from greenroom.services.tmdb.service import TMDBService
 from greenroom.tools.discovery_tools import VALID_SORT_OPTIONS
 
 pytestmark = pytest.mark.external
