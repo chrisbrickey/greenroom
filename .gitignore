@@ -7,7 +7,8 @@ __pycache__/
 venv/
 env/
 
-# agents
+# agent platforms
+.mcp.json
 .claude/
 .codex/
 .vibe/
