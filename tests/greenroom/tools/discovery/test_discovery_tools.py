@@ -1,74 +1,20 @@
-"""Tests for discovery_tools.py tool layer."""
+"""Tests for the orchestration layer beneath the MCP tools for content retrieval."""
 
 import pytest
-from datetime import date
-from unittest.mock import AsyncMock, Mock
 
-from greenroom.tools.discovery_tools import fetch_films, fetch_television
-from greenroom.models.media import Media, MediaList
+from greenroom.tools.discovery.discovery_tools import fetch_films, fetch_television
+from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
-@pytest.fixture
-def mock_media_service():
-    """Create a mock media service."""
-    service = Mock()
-    service.get_provider_name.return_value = "TMDB"
-    service.get_media = AsyncMock()
-    return service
+# The largest result count the tools accept, stated once so every boundary
+# assertion below moves together when that policy changes
+MAX_RESULTS_CEILING = 100
+ABOVE_MAX_RESULTS = MAX_RESULTS_CEILING + 1
+MAX_RESULTS_RANGE_MESSAGE = f"max_results must be between 1 and {MAX_RESULTS_CEILING}"
 
-
-@pytest.fixture
-def sample_film_media_list():
-    """Create sample film MediaList for testing."""
-    return MediaList(
-        results=[
-            Media(
-                id="1",
-                media_type=MEDIA_TYPE_FILM,
-                title="Film 1",
-                date=date(2024, 1, 15),
-                rating=8.0,
-                description="Description 1",
-                genre_ids=[28]
-            ),
-            Media(
-                id="2",
-                media_type=MEDIA_TYPE_FILM,
-                title="Film 2",
-                date=None,
-                rating=None,
-                description=None,
-                genre_ids=[]
-            ),
-        ],
-        total_results=50,
-        page=1,
-        total_pages=3
-    )
-
-
-@pytest.fixture
-def sample_tv_media_list():
-    """Create sample television MediaList for testing."""
-    return MediaList(
-        results=[
-            Media(
-                id="101",
-                media_type=MEDIA_TYPE_TELEVISION,
-                title="TV Show 1",
-                date=date(2024, 3, 20),
-                rating=9.0,
-                description="TV Description 1",
-                genre_ids=[18, 10765]
-            ),
-        ],
-        total_results=25,
-        page=2,
-        total_pages=5
-    )
 
 class TestFetchFilms:
-    """Tests for fetch_films helper function."""
+    """Tests for fetch_films orchestration function."""
 
     @pytest.mark.asyncio
     async def test_returns_formatted_results(self, mock_media_service, sample_film_media_list):
@@ -128,7 +74,7 @@ class TestFetchFilms:
             language="es",
             sort_by="vote_average.desc",
             page=3,
-            max_results=50
+            max_results=15
         )
 
         mock_media_service.get_media.assert_called_once_with(
@@ -138,7 +84,7 @@ class TestFetchFilms:
             language="es",
             sort_by="vote_average.desc",
             page=3,
-            max_results=50
+            max_results=15
         )
 
     @pytest.mark.asyncio
@@ -166,15 +112,15 @@ class TestFetchFilms:
     @pytest.mark.asyncio
     async def test_validates_max_results(self, mock_media_service, sample_film_media_list):
         """Test fetch_films validates max_results parameter."""
-        with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
+        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
             await fetch_films(mock_media_service, max_results=0)
-        with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            await fetch_films(mock_media_service, max_results=101)
+        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
+            await fetch_films(mock_media_service, max_results=ABOVE_MAX_RESULTS)
 
-        # Boundaries: 1 and 100 should be accepted
+        # Boundaries: 1 and the ceiling should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
         await fetch_films(mock_media_service, max_results=1)
-        await fetch_films(mock_media_service, max_results=100)
+        await fetch_films(mock_media_service, max_results=MAX_RESULTS_CEILING)
 
     @pytest.mark.asyncio
     async def test_validates_language(self, mock_media_service, sample_film_media_list):
@@ -214,8 +160,9 @@ class TestFetchFilms:
         assert result["total_results"] == 0
         assert result["total_pages"] == 0
 
+
 class TestFetchTelevision:
-    """Tests for fetch_television helper function."""
+    """Tests for fetch_television orchestration function."""
 
     @pytest.mark.asyncio
     async def test_returns_formatted_results(self, mock_media_service, sample_tv_media_list):
@@ -267,7 +214,7 @@ class TestFetchTelevision:
             language="fr",
             sort_by="date.asc",
             page=5,
-            max_results=75
+            max_results=12
         )
 
         mock_media_service.get_media.assert_called_once_with(
@@ -277,7 +224,7 @@ class TestFetchTelevision:
             language="fr",
             sort_by="date.asc",
             page=5,
-            max_results=75
+            max_results=12
         )
 
     @pytest.mark.asyncio
@@ -305,15 +252,15 @@ class TestFetchTelevision:
     @pytest.mark.asyncio
     async def test_validates_max_results(self, mock_media_service, sample_tv_media_list):
         """Test fetch_television validates max_results parameter."""
-        with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
+        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
             await fetch_television(mock_media_service, max_results=0)
-        with pytest.raises(ValueError, match="max_results must be between 1 and 100"):
-            await fetch_television(mock_media_service, max_results=101)
+        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
+            await fetch_television(mock_media_service, max_results=ABOVE_MAX_RESULTS)
 
-        # Boundaries: 1 and 100 should be accepted
+        # Boundaries: 1 and the ceiling should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
         await fetch_television(mock_media_service, max_results=1)
-        await fetch_television(mock_media_service, max_results=100)
+        await fetch_television(mock_media_service, max_results=MAX_RESULTS_CEILING)
 
     @pytest.mark.asyncio
     async def test_validates_language(self, mock_media_service, sample_tv_media_list):
