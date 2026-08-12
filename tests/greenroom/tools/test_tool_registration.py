@@ -22,6 +22,7 @@ from greenroom.tools.discovery import register_all_discovery_tools
 from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 
 
 FASTMCP_RESULT_KEY = "result" # the key under which bare values are nested when using FastMCP
@@ -107,7 +108,6 @@ COMPARISON_TEMPERATURE = 0.7
 COMPARISON_MAX_TOKENS = 500
 
 DISCOVERY_PARAMETERS = ["genre_id", "year", "language", "sort_by", "page", "max_results"]
-DISCOVER_MAX_RESULTS = 20
 DISCOVER_PAGE = 1
 DISCOVERY_DEFAULTS: dict[str, Any] = {"page": DISCOVER_PAGE, "max_results": DISCOVER_MAX_RESULTS}
 

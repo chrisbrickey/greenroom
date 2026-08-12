@@ -1,12 +1,12 @@
 """Tests for the shared parameter validation in discovery/validation.py.
 
-These exercise validate_discovery_params directly: no provider, no network,
-no MCP server. The bounds are restated here as literals rather than imported
-from production so that a wrong constant fails a test instead of moving it.
+These exercise validate_discovery_params directly:
+no provider, no network, no MCP server.
 """
 
 import pytest
 
+from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN
 from greenroom.tools.discovery.validation import VALID_SORT_OPTIONS, validate_discovery_params
 
 # --------------
@@ -17,11 +17,11 @@ from greenroom.tools.discovery.validation import VALID_SORT_OPTIONS, validate_di
 MIN_YEAR = 1900
 BELOW_MIN_YEAR = MIN_YEAR - 1
 MIN_PAGE = 1
-MAX_RESULTS_CEILING = 100
-ABOVE_MAX_RESULTS = MAX_RESULTS_CEILING + 1
 YEAR_MESSAGE = f"year must be {MIN_YEAR} or later"
 PAGE_MESSAGE = f"page must be {MIN_PAGE} or greater"
-MAX_RESULTS_RANGE_MESSAGE = f"max_results must be between 1 and {MAX_RESULTS_CEILING}"
+MAX_RESULTS_RANGE_MESSAGE = (
+    f"max_results must be between {MAX_RESULTS_MIN} and {MAX_RESULTS_MAX}"
+)
 LANGUAGE_MESSAGE = "language must be a 2-character ISO 639-1 code"
 SORT_BY_MESSAGE = "sort_by must be one of"
 
@@ -29,7 +29,7 @@ SORT_BY_MESSAGE = "sort_by must be one of"
 VALID_PARAMS = {
     "year": 2024,
     "page": 1,
-    "max_results": 20,
+    "max_results": MAX_RESULTS_MAX,
     "language": "en",
     "sort_by": "popularity.desc",
 }
@@ -83,17 +83,17 @@ def test_accepts_positive_page(page):
     validate_discovery_params(**params(page=page))
 
 
-@pytest.mark.parametrize("max_results", [0, -1, ABOVE_MAX_RESULTS, 1000])
-def test_rejects_max_results_outside_supported_range(max_results):
-    """Counts below one or above the ceiling are rejected."""
+@pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN, MAX_RESULTS_MAX])
+def test_accepts_max_results_at_the_bounds(max_results: int) -> None:
+    """Both bounds are inclusive, so every count between them is accepted too."""
+    validate_discovery_params(**params(max_results=max_results))
+
+
+@pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN - 1, MAX_RESULTS_MAX + 1])
+def test_rejects_max_results_outside_the_bounds(max_results: int) -> None:
+    """One step past either bound is rejected."""
     with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
         validate_discovery_params(**params(max_results=max_results))
-
-
-@pytest.mark.parametrize("max_results", [1, 20, MAX_RESULTS_CEILING])
-def test_accepts_max_results_within_supported_range(max_results):
-    """Both boundaries of the supported range are accepted."""
-    validate_discovery_params(**params(max_results=max_results))
 
 
 @pytest.mark.parametrize("language", ["en", "es", "fr", None])

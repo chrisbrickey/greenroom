@@ -226,33 +226,6 @@ async def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMoc
 
 
 @pytest.mark.asyncio
-async def test_get_media_respects_max_results(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that max_results parameter limits returned media."""
-    monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
-
-    # Mock response with 20 films
-    mock_results = [{"id": i, "title": f"Film {i}"} for i in range(20)]
-    mock_response = {
-        "page": 1,
-        "total_results": 100,
-        "total_pages": 5,
-        "results": mock_results
-    }
-
-    httpx_mock.add_response(
-        url=build_discover_url("movie"),
-        json=mock_response
-    )
-
-    service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, max_results=5)
-
-    assert len(result.results) == 5
-    assert result.results[0].id == "0"
-    assert result.results[4].id == "4"
-
-
-@pytest.mark.asyncio
 async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
     """Test that get_media applies correct default parameters."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")

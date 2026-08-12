@@ -5,6 +5,8 @@ of the downstream service selected. These checks should apply to any media type
 that the tools grow to cover.
 """
 
+from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN
+
 
 # Sort orders the discovery tools accept. These are provider-agnostic: the
 # service translates them into the vocabulary of whichever provider it wraps.
@@ -18,9 +20,6 @@ VALID_SORT_OPTIONS = (
 MIN_YEAR = 1900
 MIN_PAGE = 1
 LANGUAGE_CODE_LENGTH = 2
-MAX_RESULTS_MIN = 1
-MAX_RESULTS_MAX = 100
-
 
 def validate_discovery_params(
     *,

@@ -14,3 +14,13 @@ import from services, but services must never import from tools.
 # Before more content providers are added, PROVIDER_PAGE_SIZE should move to MediaService protocol.
 
 PROVIDER_PAGE_SIZE: int = 20 # number of results a single page returned from the provider can hold
+
+#-----------------------------
+# greenroom-defined  limits
+#-----------------------------
+
+DISCOVER_MAX_RESULTS: int = 20  # a long list when filtering by criteria
+
+# Bounds accepted for the max_results parameter.
+MAX_RESULTS_MIN: int = 1
+MAX_RESULTS_MAX: int = PROVIDER_PAGE_SIZE

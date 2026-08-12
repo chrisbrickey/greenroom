@@ -226,7 +226,7 @@ Regardless of your preferred platform, exercising the server is fairly standardi
     startup_timeout_sec = 15.0
     ```
 2. Exercise in vibe CLI
-   - `vibe` to open a fresh session (or `/reload` within an open session)
+   - `vibe` to open a fresh session
    - Type `/mcp` to view available MCP servers. 
    - Confirm that greenroom is one of them with status: connected.
 
@@ -238,7 +238,7 @@ Regardless of your preferred platform, exercising the server is fairly standardi
   ```
 
 2. Exercise in claude CLI
-   - `claude` to open a fresh session (or `/reload` within an open session)
+   - `claude` to open a fresh session
    - Type `/mcp` to view available MCP servers. 
    - Confirm that greenroom is one of them with status: connected.
 
