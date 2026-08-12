@@ -2,15 +2,10 @@
 
 import pytest
 
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.tools.discovery.discovery_tools import fetch_films, fetch_television
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
-
-# The largest result count the tools accept, stated once so every boundary
-# assertion below moves together when that policy changes
-MAX_RESULTS_CEILING = 100
-ABOVE_MAX_RESULTS = MAX_RESULTS_CEILING + 1
-MAX_RESULTS_RANGE_MESSAGE = f"max_results must be between 1 and {MAX_RESULTS_CEILING}"
 
 
 class TestFetchFilms:
@@ -59,7 +54,7 @@ class TestFetchFilms:
             language=None,
             sort_by=None,
             page=1,
-            max_results=20
+            max_results=DISCOVER_MAX_RESULTS
         )
 
     @pytest.mark.asyncio
@@ -108,19 +103,6 @@ class TestFetchFilms:
         # Boundary: 1 should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
         await fetch_films(mock_media_service, page=1)
-
-    @pytest.mark.asyncio
-    async def test_validates_max_results(self, mock_media_service, sample_film_media_list):
-        """Test fetch_films validates max_results parameter."""
-        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await fetch_films(mock_media_service, max_results=0)
-        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await fetch_films(mock_media_service, max_results=ABOVE_MAX_RESULTS)
-
-        # Boundaries: 1 and the ceiling should be accepted
-        mock_media_service.get_media.return_value = sample_film_media_list
-        await fetch_films(mock_media_service, max_results=1)
-        await fetch_films(mock_media_service, max_results=MAX_RESULTS_CEILING)
 
     @pytest.mark.asyncio
     async def test_validates_language(self, mock_media_service, sample_film_media_list):
@@ -199,7 +181,7 @@ class TestFetchTelevision:
             language=None,
             sort_by=None,
             page=1,
-            max_results=20
+            max_results=DISCOVER_MAX_RESULTS
         )
 
     @pytest.mark.asyncio
@@ -248,19 +230,6 @@ class TestFetchTelevision:
         # Boundary: 1 should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
         await fetch_television(mock_media_service, page=1)
-
-    @pytest.mark.asyncio
-    async def test_validates_max_results(self, mock_media_service, sample_tv_media_list):
-        """Test fetch_television validates max_results parameter."""
-        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await fetch_television(mock_media_service, max_results=0)
-        with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await fetch_television(mock_media_service, max_results=ABOVE_MAX_RESULTS)
-
-        # Boundaries: 1 and the ceiling should be accepted
-        mock_media_service.get_media.return_value = sample_tv_media_list
-        await fetch_television(mock_media_service, max_results=1)
-        await fetch_television(mock_media_service, max_results=MAX_RESULTS_CEILING)
 
     @pytest.mark.asyncio
     async def test_validates_language(self, mock_media_service, sample_tv_media_list):

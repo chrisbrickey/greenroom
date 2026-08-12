@@ -5,6 +5,7 @@ import asyncio
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.services.tmdb.client import TMDBClient
 from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDB_TELEVISION_CONFIG, TMDBMediaConfig
 from greenroom.services.tmdb.genre_mapper import to_genre_list
@@ -53,7 +54,7 @@ class TMDBService:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> MediaList:
         """From TMDB, retrieve list of media matching the given criteria.
 

@@ -19,6 +19,7 @@ from fastmcp import FastMCP
 
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
 from greenroom.models.responses import DiscoveryResultDict
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.services.protocols import MediaService
 from greenroom.tools.discovery.formatting import format_media_list
 from greenroom.tools.discovery.validation import validate_discovery_params
@@ -43,7 +44,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
         Retrieve a list of films based on optional filters like genre, release year,
@@ -57,7 +58,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
-            max_results: Maximum number of results to return (default: 20, max: 100)
+            max_results: Maximum number of results to return from this page
 
         Returns:
             Dictionary containing:
@@ -95,7 +96,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
-        max_results: int = 20
+        max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
         Retrieve a list of television shows based on optional filters like genre, first air year,
@@ -109,7 +110,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
             page: Page number for pagination, 1-indexed (default: 1)
-            max_results: Maximum number of results to return (default: 20, max: 100)
+            max_results: Maximum number of results to return from this page
 
         Returns:
             Dictionary containing:
@@ -147,7 +148,7 @@ async def fetch_films(
     language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
-    max_results: int = 20,
+    max_results: int = DISCOVER_MAX_RESULTS,
 ) -> DiscoveryResultDict:
     return await _discover_media(
         media_service, MEDIA_TYPE_FILM, genre_id, year, language, sort_by, page, max_results
@@ -160,7 +161,7 @@ async def fetch_television(
     language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
-    max_results: int = 20
+    max_results: int = DISCOVER_MAX_RESULTS
 ) -> DiscoveryResultDict:
     return await _discover_media(
         media_service, MEDIA_TYPE_TELEVISION, genre_id, year, language, sort_by, page, max_results

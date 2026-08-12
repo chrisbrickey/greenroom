@@ -35,9 +35,9 @@ ASCENDING_DIRECTION = "asc"
 MEDIA_ATTRIBUTE_BY_SORT_ORDER: dict[str, str | None] = {
     "date.desc": "date",
     "date.asc": "date",
-    "vote_average.desc": "rating",
 
-    # TMDB serves a page of unrated titles here, and not in ascending order
+    # TMDB does not sort reliably on this metric as of 2026
+    "vote_average.desc": None,
     "vote_average.asc": None,
 
     # Popularity is not carried on Media
