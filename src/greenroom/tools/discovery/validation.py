@@ -38,8 +38,36 @@ def validate_discovery_params(
     _validate_year(year)
     _validate_page(page)
     _validate_max_results(max_results)
-    _validate_language_code(language)
+    _validate_language_code(language, param_name="language")
     _validate_sort_by(sort_by)
+
+
+def validate_search_params(
+    *,
+    query: str,
+    year: int | None,
+    page: int,
+    max_results: int,
+    display_language: str | None
+) -> None:
+    """Validate the parameters accepted by the search tools.
+
+    Raises:
+        ValueError: If any parameter is invalid
+    """
+
+    _validate_query(query)
+    _validate_year(year)
+    _validate_page(page)
+    _validate_max_results(max_results)
+    _validate_language_code(display_language, param_name="display_language")
+
+
+def _validate_query(query: str) -> None:
+    """Reject a missing or whitespace-only title."""
+
+    if not query or not query.strip():
+        raise ValueError("query must be a non-empty string")
 
 
 def _validate_year(year: int | None) -> None:
@@ -63,15 +91,24 @@ def _validate_max_results(max_results: int) -> None:
         raise ValueError(f"max_results must be between {MAX_RESULTS_MIN} and {MAX_RESULTS_MAX}")
 
 
-def _validate_language_code(language: str | None) -> None:
-    """Reject anything that is not a 2-letter ISO 639-1 code."""
+def _validate_language_code(language: str | None, param_name: str) -> None:
+    """Reject anything that is not a 2-letter ISO 639-1 code.
+
+    Args:
+        language: The code to check
+        param_name: Field name to report, since the discovery and search tools
+                    expose this parameter under different names
+
+    Raises:
+        ValueError: If the code is present but malformed
+    """
 
     if language is None:
         return
 
     if len(language) != LANGUAGE_CODE_LENGTH or not language.isalpha():
         raise ValueError(
-            "language must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')"
+            f"{param_name} must be a 2-character ISO 639-1 code (e.g., 'en', 'es', 'fr')"
         )
 
 

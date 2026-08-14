@@ -22,12 +22,14 @@ from greenroom.tools.discovery import register_all_discovery_tools
 from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
-from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RESULTS
 
 
 FASTMCP_RESULT_KEY = "result" # the key under which bare values are nested when using FastMCP
 PROVIDER_NAME = "TMDB"
 TEST_API_KEY = "test_api_key"
+FILM_QUERY = "Test Film"
+TELEVISION_QUERY = "Test Show"
 
 
 # =============================================================================
@@ -108,8 +110,10 @@ COMPARISON_TEMPERATURE = 0.7
 COMPARISON_MAX_TOKENS = 500
 
 DISCOVERY_PARAMETERS = ["genre_id", "year", "language", "sort_by", "page", "max_results"]
-DISCOVER_PAGE = 1
-DISCOVERY_DEFAULTS: dict[str, Any] = {"page": DISCOVER_PAGE, "max_results": DISCOVER_MAX_RESULTS}
+SEARCH_PARAMETERS = ["query", "year", "display_language", "page", "max_results"]
+FIRST_PAGE = 1
+DISCOVERY_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
+SEARCH_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": SEARCH_MAX_RESULTS}
 
 
 @dataclass(frozen=True)
@@ -146,6 +150,20 @@ SCHEMA_CASES = [
         expected_parameters=DISCOVERY_PARAMETERS,
         expected_required=[],
         expected_defaults=DISCOVERY_DEFAULTS,
+    ),
+    SchemaCase(
+        tool_name="search_films",
+        server_fixture="discovery_server",
+        expected_parameters=SEARCH_PARAMETERS,
+        expected_required=["query"],
+        expected_defaults=SEARCH_DEFAULTS,
+    ),
+    SchemaCase(
+        tool_name="search_television",
+        server_fixture="discovery_server",
+        expected_parameters=SEARCH_PARAMETERS,
+        expected_required=["query"],
+        expected_defaults=SEARCH_DEFAULTS,
     ),
     SchemaCase(
         tool_name="list_genres",
@@ -185,7 +203,7 @@ SCHEMA_CASES = [
 # Tools each registration function is expected to contribute, stated separately
 # from SCHEMA_CASES so that a tool added to neither list is still caught
 REGISTRATION_CASES = [
-    ("discovery_server", {"discover_films", "discover_television"}),
+    ("discovery_server", {"discover_films", "discover_television", "search_films", "search_television"}),
     ("genre_server", {"list_genres", "list_genres_simplified", "categorize_genres"}),
     ("agent_server", {"compare_llm_responses"}),
 ]
@@ -247,9 +265,9 @@ async def test_tool_advertises_expected_defaults(request, case: SchemaCase):
     assert advertised == case.expected_defaults
 
 
-# =============================================================================
-# Argument routing through the registered discovery tools
-# =============================================================================
+# ================================================
+# Argument routing through the registered tools
+# ================================================
 
 # Distinct values so that a mix-up between two arguments changes the outgoing request
 REQUESTED_GENRE_ID = 28
@@ -259,6 +277,9 @@ REQUESTED_SORT_BY = "vote_average.desc"
 REQUESTED_PAGE = 2
 REQUESTED_MAX_RESULTS = 1
 
+# Parameters the search endpoints must never send, since only discovery supports them
+DISCOVERY_ONLY_PARAMS = ("sort_by", "with_original_language")
+
 # TMDB response field names, which differ by media type
 FILM_RESPONSE_FIELDS = ("title", "release_date")
 TELEVISION_RESPONSE_FIELDS = ("name", "first_air_date")
@@ -266,13 +287,24 @@ TELEVISION_RESPONSE_FIELDS = ("name", "first_air_date")
 
 @dataclass(frozen=True)
 class ToolCase:
-    """A registered tool paired with the provider request it is expected to produce."""
+    """A registered tool paired with the provider request it is expected to produce.
+
+    Attributes:
+        tool_name: Name the tool is registered under
+        arguments: Arguments an agent supplies when calling the tool
+        expected_path: Provider URL path the tool is expected to call
+        expected_provider_params: Provider query params the arguments map onto
+        expected_media_type: Media type the returned results carry
+        response_fields: Provider title and date field names for this media type
+        forbidden_params: Provider query params this tool must never send
+    """
     tool_name: str
     arguments: dict[str, Any]
     expected_path: str
     expected_provider_params: dict[str, str]
     expected_media_type: str
     response_fields: tuple[str, str]
+    forbidden_params: tuple[str, ...] = field(default=())
 
 
 DISCOVERY_ARGUMENTS: dict[str, Any] = {
@@ -292,6 +324,42 @@ SHARED_DISCOVERY_PARAMS: dict[str, str] = {
 }
 
 
+def build_search_arguments(query: str) -> dict[str, Any]:
+    """Build the arguments an agent supplies when calling a search tool.
+
+    Args:
+        query: Title text to search for
+
+    Returns:
+        Dictionary of tool arguments
+    """
+    return {
+        "query": query,
+        "year": REQUESTED_YEAR,
+        "display_language": REQUESTED_LANGUAGE,
+        "page": REQUESTED_PAGE,
+        "max_results": REQUESTED_MAX_RESULTS,
+    }
+
+
+def expected_search_params(query: str, year_param: str) -> dict[str, str]:
+    """Build the provider query params a search tool is expected to send.
+
+    Args:
+        query: Title text expected to reach the provider
+        year_param: Provider year parameter name for this media type
+
+    Returns:
+        Dictionary of expected provider query params
+    """
+    return {
+        "query": query,
+        year_param: str(REQUESTED_YEAR),
+        "language": REQUESTED_LANGUAGE,
+        "page": str(REQUESTED_PAGE),
+    }
+
+
 TOOL_CASES = [
     ToolCase(
         tool_name="discover_films",
@@ -309,9 +377,29 @@ TOOL_CASES = [
         expected_media_type=MEDIA_TYPE_TELEVISION,
         response_fields=TELEVISION_RESPONSE_FIELDS,
     ),
+    ToolCase(
+        tool_name="search_films",
+        arguments=build_search_arguments(FILM_QUERY),
+        expected_path="/3/search/movie",
+        expected_provider_params=expected_search_params(FILM_QUERY, "primary_release_year"),
+        expected_media_type=MEDIA_TYPE_FILM,
+        response_fields=FILM_RESPONSE_FIELDS,
+        forbidden_params=DISCOVERY_ONLY_PARAMS,
+    ),
+    ToolCase(
+        tool_name="search_television",
+        arguments=build_search_arguments(TELEVISION_QUERY),
+        expected_path="/3/search/tv",
+        expected_provider_params=expected_search_params(TELEVISION_QUERY, "first_air_date_year"),
+        expected_media_type=MEDIA_TYPE_TELEVISION,
+        response_fields=TELEVISION_RESPONSE_FIELDS,
+        forbidden_params=DISCOVERY_ONLY_PARAMS,
+    ),
 ]
 
-TOOL_NAMES = [case.tool_name for case in TOOL_CASES]
+# Split by flow because these flows use different parameters
+DISCOVERY_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "sort_by" in case.arguments]
+SEARCH_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "query" in case.arguments]
 
 
 def build_two_result_response(title_field: str, date_field: str) -> dict[str, Any]:
@@ -322,7 +410,7 @@ def build_two_result_response(title_field: str, date_field: str) -> dict[str, An
         date_field: Provider date field name ("release_date" or "first_air_date")
 
     Returns:
-        Dictionary shaped like a TMDB discover response
+        Dictionary shaped like a TMDB content response
     """
     return {
         "page": REQUESTED_PAGE,
@@ -355,6 +443,9 @@ async def test_tool_forwards_arguments_to_provider(discovery_server, httpx_mock,
     # Compared as a whole so a failure reports every misrouted argument at once
     sent_params = {name: request.url.params.get(name) for name in case.expected_provider_params}
     assert sent_params == case.expected_provider_params
+
+    for name in case.forbidden_params:
+        assert name not in request.url.params
 
     payload = result.structured_content
     assert len(payload["results"]) == REQUESTED_MAX_RESULTS
@@ -538,15 +629,25 @@ async def test_compare_tool_applies_advertised_defaults(agent_server, alternativ
 # =============================================================================
 
 UNSUPPORTED_SORT_BY = "not-a-real-field.desc"
+BLANK_QUERY = "   "
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("tool_name", TOOL_NAMES)
+@pytest.mark.parametrize("tool_name", DISCOVERY_TOOL_NAMES)
 async def test_tool_rejects_unsupported_sort_order(discovery_server, httpx_mock, tool_name: str):
     """Test that an invalid argument is rejected before any provider call is made."""
     async with Client(discovery_server) as client:
         with pytest.raises(ToolError, match="sort_by must be one of"):
             await client.call_tool(tool_name, {"sort_by": UNSUPPORTED_SORT_BY})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("tool_name", SEARCH_TOOL_NAMES)
+async def test_search_tools_reject_blank_query(discovery_server, httpx_mock, tool_name: str):
+    """Test that a blank query is rejected before any provider call is made."""
+    async with Client(discovery_server) as client:
+        with pytest.raises(ToolError, match="query must be a non-empty string"):
+            await client.call_tool(tool_name, {"query": BLANK_QUERY})
 
 
 @pytest.mark.asyncio

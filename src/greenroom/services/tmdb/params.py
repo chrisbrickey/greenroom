@@ -61,6 +61,46 @@ def build_discover_params(
     return params
 
 
+def build_search_params(
+    config: TMDBMediaConfig,
+    query: str,
+    year: int | None,
+    display_language: str | None,
+    page: int
+) -> TMDBParams:
+    """Build query parameters for the TMDB search endpoints.
+
+    TMDB provides search endpoints (searching for a single title) that are
+    distinct from its endpoints for retrieving a list of media based on filters.
+    The different endpoints accept different sets of parameters
+    so we use distinct functions to build the parameter sets.
+
+    Args:
+        config: TMDB media configuration
+        query: Title text to search for
+        year: Optional year filter
+        display_language: Optional language for the returned title and overview
+        page: Page number
+
+    Returns:
+        Dictionary of TMDB query parameters
+    """
+
+    params: TMDBParams = {
+        "query": query,
+        "page": page,
+        "include_adult": False  # Exclude pornographic content
+    }
+
+    if year is not None:
+        params[config.year_param] = year
+
+    if display_language is not None:
+        params["language"] = display_language
+
+    return params
+
+
 def _to_provider_sort_order(sort_by: str | None, config: TMDBMediaConfig) -> str:
     """Translate a provider-agnostic sort order into TMDB's vocabulary.
 

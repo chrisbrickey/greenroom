@@ -93,6 +93,35 @@ class MediaService(Protocol):
         """
         ...
 
+    async def search_media(
+        self,
+        media_type: MediaType,
+        query: str,
+        year: int | None,
+        display_language: str | None,
+        page: int,
+        max_results: int
+    ) -> MediaList:
+        """Search for one element (or short list) that matches the given title.
+
+        Args:
+            media_type: Type-safe group of media to search
+            query: Title text to search for
+            year: Filter on year of release, or None
+            display_language: ISO 639-1 code for the language of the returned text, or None
+            page: Page number for pagination (1-indexed)
+            max_results: Maximum number of results to return
+
+        Returns:
+            MediaList with standardized Media objects, ordered by provider relevance
+
+        Raises:
+            ValueError: For invalid parameters
+            APIResponseError: For service errors
+            APIConnectionError: For network errors
+        """
+        ...
+
     def get_provider_name(self) -> str:
         """Return the name of this provider (e.g., 'TMDB', 'IMDb')."""
         ...
