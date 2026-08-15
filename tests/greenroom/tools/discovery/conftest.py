@@ -72,6 +72,7 @@ def mock_media_service() -> Mock:
     service = Mock(spec=MediaService)
     service.get_provider_name.return_value = PROVIDER_NAME
     service.get_media = AsyncMock()
+    service.search_media = AsyncMock()
     return service
 
 

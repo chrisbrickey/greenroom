@@ -41,10 +41,13 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 
 ### Tools
 
-- **list_genres:** Fetches all entertainment genres, returning a unified map showing which media types support each genre
-- **categorize_genres:** Maps human moods to media genres to improve hit rate from human prompts
-- **discover_films:** Retrieves list of films based on selected criteria. Returns metadata for informed responses and optimized categorization.
-- **discover_television:** Retrieves list of television shows based on selected criteria. Returns metadata for informed responses and optimized categorization.
+| Category | Tool | Description |
+| --- | --- | --- |
+| Genres | **list_genres** | Fetches all entertainment genres, returning a unified map showing which media types support each genre |
+| Genres | **categorize_genres** | Maps human moods to media genres to improve hit rate from human prompts |
+| Films | **discover_films** | Retrieves list of films based on selected criteria. Returns metadata for informed responses and optimized categorization. |
+| Films | **search_films** | Looks up films by title. Search can be optionally narrowed by release year. Returns the same metadata shape as discover_films. |
+| Television | **discover_television** | Retrieves list of television shows based on selected criteria. Returns metadata for informed responses and optimized categorization. |
 
 _MCP tools are callable actions, analogous to POST requests, that an agent executes. They are annotated with `@mcp.tool()` in the FastMCP framework._
 
