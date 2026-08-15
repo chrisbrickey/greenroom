@@ -6,7 +6,7 @@ See discovery_tools.py instead for browsing by criteria such as genre or year.
 
 from fastmcp import FastMCP
 
-from greenroom.models.media_types import MEDIA_TYPE_FILM, MediaType
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
 from greenroom.models.responses import DiscoveryResultDict
 from greenroom.services.media_limits import SEARCH_MAX_RESULTS
 from greenroom.services.protocols import MediaService
@@ -80,6 +80,60 @@ def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
         return await find_films(service, query, year, display_language, page, max_results)
 
+    @mcp.tool()
+    async def search_television(
+        query: str,
+        year: int | None = None,
+        display_language: str | None = None,
+        page: int = 1,
+        max_results: int = SEARCH_MAX_RESULTS
+    ) -> DiscoveryResultDict:
+        """
+        Looks up television shows by title. Use this when the user provides the title of a specific show.
+        Use discover_television instead when browsing by criteria like genre or year.
+
+        For now, defaults to TMDB service.
+
+        Args:
+            query: Television show title to search for (required, e.g., "Severance")
+            year: Optional first air year to narrow the search by (e.g., 2024)
+            display_language: Optional ISO 639-1 language code (e.g., "fr")
+                              that specifies whether to translate the returned
+                              title and description into a different display language.
+                              This is not a filter on the show's original language.
+            page: Page number for pagination, 1-indexed (default: 1)
+            max_results: Maximum number of results to return from this page.
+                         One call fetches one page. Use page to reach results beyond that.
+
+        Returns:
+            Dictionary containing (results ordered by relevance to the query):
+            {
+                "results": [
+                    {
+                        "id": str,
+                        "media_type": str,
+                        "title": str,
+                        "date": str (YYYY-MM-DD format, may be None),
+                        "rating": float (0-10 scale, may be None),
+                        "description": str (may be None),
+                        "genre_ids": List[int]
+                    }
+                ],
+                "total_results": int,
+                "page": int,
+                "total_pages": int,
+                "provider": str
+            }
+
+        Raises:
+            ValueError: If invalid parameters provided
+            APIResponseError: If service returns an error
+            APIConnectionError: If unable to connect to service
+        """
+
+        # Delegate to public orchestration method to enable unit testing without FastMCP server setup
+        return await find_television(service, query, year, display_language, page, max_results)
+
 
 # -------------
 # Orchestration
@@ -95,6 +149,18 @@ async def find_films(
 ) -> DiscoveryResultDict:
     return await _search_media(
         media_service, MEDIA_TYPE_FILM, query, year, display_language, page, max_results
+    )
+
+async def find_television(
+    media_service: MediaService,
+    query: str,
+    year: int | None = None,
+    display_language: str | None = None,
+    page: int = 1,
+    max_results: int = SEARCH_MAX_RESULTS
+) -> DiscoveryResultDict:
+    return await _search_media(
+        media_service, MEDIA_TYPE_TELEVISION, query, year, display_language, page, max_results
     )
 
 async def _search_media(
