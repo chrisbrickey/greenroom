@@ -1,11 +1,30 @@
 """Shared constants and helpers for TMDBService tests."""
 
+from dataclasses import dataclass
 from typing import Any
 
 from greenroom.services.tmdb.client import TMDBClient
 
 TMDB_BASE_URL = TMDBClient.BASE_URL
 TEST_API_KEY = "test_api_key"
+
+
+@dataclass(frozen=True)
+class SampleMedia:
+    """The values a sample entry carries unchanged from provider payload to Media.
+
+    This should only include fields the mapper copies verbatim so that a test value
+    can be defined in one place and referenced both in the mock and the expectation.
+
+    Values that require transformation are deliberately absent. For example, id is
+    coerced to a string, date is parsed from a string, and media_type is stamped from
+    the call rather than read from the payload. Those are written literally at each usage
+    site in a test because the difference between the two forms is what the tests assert.
+    """
+    title: str
+    description: str
+    rating: float
+    genre_ids: list[int]
 
 # Result count for truncation tests.
 # Selected to be much smaller than any max-results default is ever expected to drift.

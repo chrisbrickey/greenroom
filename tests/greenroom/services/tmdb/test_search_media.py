@@ -14,17 +14,41 @@ from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import PROVIDER_PAGE_SIZE, SEARCH_MAX_RESULTS
 from greenroom.services.tmdb.service import TMDBService
 
-from .conftest import TEST_API_KEY, TMDB_BASE_URL, TRUNCATED_MAX_RESULTS, build_oversized_page
+from .conftest import (
+    TEST_API_KEY,
+    TMDB_BASE_URL,
+    TRUNCATED_MAX_RESULTS,
+    SampleMedia,
+    build_oversized_page,
+)
 
 FILM_QUERY = "Test Film"
 TELEVISION_QUERY = "Test Show"
-FILM_TITLE = "Test Film One"
-FILM_SEQUEL_TITLE = "Test Film Two"
-TELEVISION_TITLE = "Test Show One"
-FILM_DESCRIPTION = "Sample description for the first sample film."
-FILM_SEQUEL_DESCRIPTION = "Sample description for the second sample film."
-TELEVISION_DESCRIPTION = "Sample description for the sample television show."
 UNMATCHED_QUERY = "No Such Title"
+
+# Stated separately because tests other than the mapping ones borrow just the title
+FILM_TITLE = "Test Film One"
+
+# Entries on the sample result pages. Each holds only what the mapper copies
+# verbatim, so the mocked payload and the expected Media can share it.
+FILM_ONE = SampleMedia(
+    title=FILM_TITLE,
+    description="Sample description for the first sample film.",
+    rating=8.2,
+    genre_ids=[28, 878],
+)
+FILM_TWO = SampleMedia(
+    title="Test Film Two",
+    description="Sample description for the second sample film.",
+    rating=7.0,
+    genre_ids=[28, 12, 878],
+)
+TELEVISION_ONE = SampleMedia(
+    title="Test Show One",
+    description="Sample description for the sample television show.",
+    rating=8.4,
+    genre_ids=[18, 9648, 878],
+)
 
 
 def build_search_url(endpoint: str, query: str, **extra_params: object) -> str:
@@ -72,19 +96,19 @@ async def test_search_media_returns_media_list_for_films(monkeypatch, httpx_mock
         "results": [
             {
                 "id": 601,
-                "title": FILM_TITLE,
+                "title": FILM_ONE.title,
                 "release_date": "1999-03-30",
-                "vote_average": 8.2,
-                "overview": FILM_DESCRIPTION,
-                "genre_ids": [28, 878]
+                "vote_average": FILM_ONE.rating,
+                "overview": FILM_ONE.description,
+                "genre_ids": FILM_ONE.genre_ids
             },
             {
                 "id": 602,
-                "title": FILM_SEQUEL_TITLE,
+                "title": FILM_TWO.title,
                 "release_date": "2003-05-15",
-                "vote_average": 7.0,
-                "overview": FILM_SEQUEL_DESCRIPTION,
-                "genre_ids": [28, 12, 878]
+                "vote_average": FILM_TWO.rating,
+                "overview": FILM_TWO.description,
+                "genre_ids": FILM_TWO.genre_ids
             }
         ]
     }
@@ -109,20 +133,20 @@ async def test_search_media_returns_media_list_for_films(monkeypatch, httpx_mock
             Media(
                 id="601",
                 media_type=MEDIA_TYPE_FILM,
-                title=FILM_TITLE,
+                title=FILM_ONE.title,
                 date=date(1999, 3, 30),
-                rating=8.2,
-                description=FILM_DESCRIPTION,
-                genre_ids=[28, 878],
+                rating=FILM_ONE.rating,
+                description=FILM_ONE.description,
+                genre_ids=FILM_ONE.genre_ids,
             ),
             Media(
                 id="602",
                 media_type=MEDIA_TYPE_FILM,
-                title=FILM_SEQUEL_TITLE,
+                title=FILM_TWO.title,
                 date=date(2003, 5, 15),
-                rating=7.0,
-                description=FILM_SEQUEL_DESCRIPTION,
-                genre_ids=[28, 12, 878],
+                rating=FILM_TWO.rating,
+                description=FILM_TWO.description,
+                genre_ids=FILM_TWO.genre_ids,
             ),
         ],
     )
@@ -140,11 +164,11 @@ async def test_search_media_returns_media_list_for_television(monkeypatch, httpx
         "results": [
             {
                 "id": 701,
-                "name": TELEVISION_TITLE,
+                "name": TELEVISION_ONE.title,
                 "first_air_date": "2022-02-17",
-                "vote_average": 8.4,
-                "overview": TELEVISION_DESCRIPTION,
-                "genre_ids": [18, 9648, 878]
+                "vote_average": TELEVISION_ONE.rating,
+                "overview": TELEVISION_ONE.description,
+                "genre_ids": TELEVISION_ONE.genre_ids
             }
         ]
     }
@@ -168,11 +192,11 @@ async def test_search_media_returns_media_list_for_television(monkeypatch, httpx
             Media(
                 id="701",
                 media_type=MEDIA_TYPE_TELEVISION,
-                title=TELEVISION_TITLE,
+                title=TELEVISION_ONE.title,
                 date=date(2022, 2, 17),
-                rating=8.4,
-                description=TELEVISION_DESCRIPTION,
-                genre_ids=[18, 9648, 878],
+                rating=TELEVISION_ONE.rating,
+                description=TELEVISION_ONE.description,
+                genre_ids=TELEVISION_ONE.genre_ids,
             ),
         ],
     )

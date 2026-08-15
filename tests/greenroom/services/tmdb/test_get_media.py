@@ -12,7 +12,13 @@ from greenroom.services.tmdb.service import TMDBService
 from greenroom.models.media import Media, MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
-from .conftest import TMDB_BASE_URL, TEST_API_KEY, TRUNCATED_MAX_RESULTS, build_oversized_page
+from .conftest import (
+    TMDB_BASE_URL,
+    TEST_API_KEY,
+    TRUNCATED_MAX_RESULTS,
+    SampleMedia,
+    build_oversized_page,
+)
 
 # Response body for tests that assert on the outgoing request rather than the results
 EMPTY_DISCOVER_RESPONSE = {
@@ -24,6 +30,33 @@ EMPTY_DISCOVER_RESPONSE = {
 
 # A page other than the default, for checking the page argument reaches TMDB
 REQUESTED_PAGE = 2
+
+# Entries on the sample result pages. Each holds only what the mapper copies
+# verbatim, so the mocked payload and the expected Media can share it.
+FILM_ONE = SampleMedia(
+    title="Test Film One",
+    description="Sample description for the first sample film.",
+    rating=7.5,
+    genre_ids=[18, 53],
+)
+FILM_TWO = SampleMedia(
+    title="Test Film Two",
+    description="Sample description for the second sample film.",
+    rating=8.0,
+    genre_ids=[80, 18],
+)
+TELEVISION_ONE = SampleMedia(
+    title="Test Show One",
+    description="Sample description for the first sample television show.",
+    rating=7.8,
+    genre_ids=[10765, 18, 10759],
+)
+TELEVISION_TWO = SampleMedia(
+    title="Test Show Two",
+    description="Sample description for the second sample television show.",
+    rating=8.2,
+    genre_ids=[18, 80],
+)
 
 
 def build_discover_url(endpoint: str, **extra_params: object) -> str:
@@ -59,20 +92,20 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
         "results": [
             {
                 "id": 1,
-                "title": "Test Film One",
+                "title": FILM_ONE.title,
                 "release_date": "2024-01-01",
-                "vote_average": 7.5,
-                "overview": "Sample description for the first sample film.",
-                "genre_ids": [18, 53],
+                "vote_average": FILM_ONE.rating,
+                "overview": FILM_ONE.description,
+                "genre_ids": FILM_ONE.genre_ids,
                 "poster_path": "/path.jpg"
             },
             {
                 "id": 2,
-                "title": "Test Film Two",
+                "title": FILM_TWO.title,
                 "release_date": "2024-02-02",
-                "vote_average": 8.0,
-                "overview": "Sample description for the second sample film.",
-                "genre_ids": [80, 18],
+                "vote_average": FILM_TWO.rating,
+                "overview": FILM_TWO.description,
+                "genre_ids": FILM_TWO.genre_ids,
                 "popularity": 50.0
             }
         ]
@@ -97,20 +130,20 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
             Media(
                 id="1",
                 media_type=MEDIA_TYPE_FILM,
-                title="Test Film One",
+                title=FILM_ONE.title,
                 date=date(2024, 1, 1),
-                rating=7.5,
-                description="Sample description for the first sample film.",
-                genre_ids=[18, 53],
+                rating=FILM_ONE.rating,
+                description=FILM_ONE.description,
+                genre_ids=FILM_ONE.genre_ids,
             ),
             Media(
                 id="2",
                 media_type=MEDIA_TYPE_FILM,
-                title="Test Film Two",
+                title=FILM_TWO.title,
                 date=date(2024, 2, 2),
-                rating=8.0,
-                description="Sample description for the second sample film.",
-                genre_ids=[80, 18],
+                rating=FILM_TWO.rating,
+                description=FILM_TWO.description,
+                genre_ids=FILM_TWO.genre_ids,
             ),
         ],
     )
@@ -128,19 +161,19 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
         "results": [
             {
                 "id": 3,
-                "name": "Test Show One",
+                "name": TELEVISION_ONE.title,
                 "first_air_date": "2024-03-03",
-                "vote_average": 7.8,
-                "overview": "Sample description for the first sample television show.",
-                "genre_ids": [10765, 18, 10759],
+                "vote_average": TELEVISION_ONE.rating,
+                "overview": TELEVISION_ONE.description,
+                "genre_ids": TELEVISION_ONE.genre_ids,
             },
             {
                 "id": 4,
-                "name": "Test Show Two",
+                "name": TELEVISION_TWO.title,
                 "first_air_date": "2024-04-04",
-                "vote_average": 8.2,
-                "overview": "Sample description for the second sample television show.",
-                "genre_ids": [18, 80],
+                "vote_average": TELEVISION_TWO.rating,
+                "overview": TELEVISION_TWO.description,
+                "genre_ids": TELEVISION_TWO.genre_ids,
             }
         ]
     }
@@ -164,20 +197,20 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
             Media(
                 id="3",
                 media_type=MEDIA_TYPE_TELEVISION,
-                title="Test Show One",
+                title=TELEVISION_ONE.title,
                 date=date(2024, 3, 3),
-                rating=7.8,
-                description="Sample description for the first sample television show.",
-                genre_ids=[10765, 18, 10759],
+                rating=TELEVISION_ONE.rating,
+                description=TELEVISION_ONE.description,
+                genre_ids=TELEVISION_ONE.genre_ids,
             ),
             Media(
                 id="4",
                 media_type=MEDIA_TYPE_TELEVISION,
-                title="Test Show Two",
+                title=TELEVISION_TWO.title,
                 date=date(2024, 4, 4),
-                rating=8.2,
-                description="Sample description for the second sample television show.",
-                genre_ids=[18, 80],
+                rating=TELEVISION_TWO.rating,
+                description=TELEVISION_TWO.description,
+                genre_ids=TELEVISION_TWO.genre_ids,
             ),
         ],
     )
