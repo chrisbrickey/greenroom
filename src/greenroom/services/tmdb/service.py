@@ -51,7 +51,7 @@ class TMDBService:
         media_type: MediaType,
         genre_id: int | None = None,
         year: int | None = None,
-        language: str | None = None,
+        original_language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
         max_results: int = DISCOVER_MAX_RESULTS
@@ -62,7 +62,7 @@ class TMDBService:
             media_type: Type-safe media type (see media_types module)
             genre_id: Optional TMDB genre ID filter
             year: Optional year filter (release/air year)
-            language: Optional ISO 639-1 language code
+            original_language: Optional ISO 639-1 code filtering on the original language of the media
             sort_by: Sort order (None defaults to "popularity.desc")
             page: Page number (1-indexed)
             max_results: Maximum results to return
@@ -77,7 +77,7 @@ class TMDBService:
         """
 
         config = self._config_for(media_type)
-        params = build_discover_params(config, genre_id, year, language, sort_by, page)
+        params = build_discover_params(config, genre_id, year, original_language, sort_by, page)
         data = await self.client.get(f"/discover/{config.endpoint}", params)
 
         return to_media_list(data, config, media_type, page, max_results)

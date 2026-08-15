@@ -67,7 +67,7 @@ class MediaService(Protocol):
         media_type: MediaType,
         genre_id: int | None,
         year: int | None,
-        language: str | None,
+        original_language: str | None,
         sort_by: str | None,
         page: int,
         max_results: int
@@ -78,7 +78,7 @@ class MediaService(Protocol):
             media_type: Type-safe group of media to discover
             genre_id: Filter on genre provided via genre tools, or None
             year: Filter on year of release, or None
-            language: ISO 639-1 language code, or None
+            original_language: None or ISO 639-1 code filter for original language of the media
             sort_by: Sort order string that is provider-specific, or None
             page: Page number for pagination (1-indexed)
             max_results: Maximum number of results to return

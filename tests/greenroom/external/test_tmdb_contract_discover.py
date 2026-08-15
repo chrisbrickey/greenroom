@@ -195,12 +195,12 @@ async def test_original_language_filter_changes_which_media_are_returned(
     """Filtering by original language changes which media come back."""
     sample = await tmdb_service.get_media(
         media_type=media_type,
-        language="en",
+        original_language="en",
         max_results=PROVIDER_PAGE_SIZE
     )
     alternate = await tmdb_service.get_media(
         media_type=media_type,
-        language="fr",
+        original_language="fr",
         max_results=PROVIDER_PAGE_SIZE
     )
 

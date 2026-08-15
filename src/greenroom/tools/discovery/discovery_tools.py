@@ -30,19 +30,21 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
     async def discover_films(
         genre_id: int | None = None,
         year: int | None = None,
-        language: str | None = None,
+        original_language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
         max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
         Retrieve a list of films based on optional filters like genre, release year,
-        language, and sorting preferences. For now, defaults to TMDB service.
+        original language, and sorting preferences. For now, defaults to TMDB service.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
             year: Optional release year to filter by (e.g., 2024)
-            language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
+            original_language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
+                               that filters the catalog down to films produced in that
+                               language. This does not translate the returned text.
             sort_by: Sort order - options: "popularity.desc", "popularity.asc",
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
@@ -76,25 +78,27 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await fetch_films(service, genre_id, year, language, sort_by, page, max_results)
+        return await fetch_films(service, genre_id, year, original_language, sort_by, page, max_results)
 
     @mcp.tool()
     async def discover_television(
         genre_id: int | None = None,
         year: int | None = None,
-        language: str | None = None,
+        original_language: str | None = None,
         sort_by: str | None = None,
         page: int = 1,
         max_results: int = DISCOVER_MAX_RESULTS
     ) -> DiscoveryResultDict:
         """
         Retrieve a list of television shows based on optional filters like genre, first air year,
-        language, and sorting preferences. For now, defaults to TMDB service.
+        original language, and sorting preferences. For now, defaults to TMDB service.
 
         Args:
             genre_id: Optional TMDB genre ID to filter by (use list_genres to find IDs)
             year: Optional first air year to filter by (e.g., 2024)
-            language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
+            original_language: Optional ISO 639-1 language code (e.g., "en", "es", "fr")
+                               that filters the catalog down to shows produced in that
+                               language. This does not translate the returned text.
             sort_by: Sort order - options: "popularity.desc", "popularity.asc",
                      "vote_average.desc", "vote_average.asc", "date.desc", "date.asc"
                      (None defaults to "popularity.desc")
@@ -128,7 +132,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await fetch_television(service, genre_id, year, language, sort_by, page, max_results)
+        return await fetch_television(service, genre_id, year, original_language, sort_by, page, max_results)
 
 # -------------
 # Orchestration
@@ -138,26 +142,26 @@ async def fetch_films(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
-    language: str | None = None,
+    original_language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
     max_results: int = DISCOVER_MAX_RESULTS,
 ) -> DiscoveryResultDict:
     return await _discover_media(
-        media_service, MEDIA_TYPE_FILM, genre_id, year, language, sort_by, page, max_results
+        media_service, MEDIA_TYPE_FILM, genre_id, year, original_language, sort_by, page, max_results
     )
 
 async def fetch_television(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
-    language: str | None = None,
+    original_language: str | None = None,
     sort_by: str | None = None,
     page: int = 1,
     max_results: int = DISCOVER_MAX_RESULTS
 ) -> DiscoveryResultDict:
     return await _discover_media(
-        media_service, MEDIA_TYPE_TELEVISION, genre_id, year, language, sort_by, page, max_results
+        media_service, MEDIA_TYPE_TELEVISION, genre_id, year, original_language, sort_by, page, max_results
     )
 
 async def _discover_media(
@@ -165,7 +169,7 @@ async def _discover_media(
     media_type: MediaType,
     genre_id: int | None,
     year: int | None,
-    language: str | None,
+    original_language: str | None,
     sort_by: str | None,
     page: int,
     max_results: int,
@@ -173,7 +177,11 @@ async def _discover_media(
 
     # Validate parameters
     validate_discovery_params(
-        year=year, page=page, max_results=max_results, language=language, sort_by=sort_by
+        year=year,
+        page=page,
+        max_results=max_results,
+        original_language=original_language,
+        sort_by=sort_by
     )
 
     # Call service
@@ -181,7 +189,7 @@ async def _discover_media(
         media_type=media_type,
         genre_id=genre_id,
         year=year,
-        language=language,
+        original_language=original_language,
         sort_by=sort_by,
         page=page,
         max_results=max_results

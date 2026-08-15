@@ -109,7 +109,7 @@ COMPARISON_PARAMETERS = ["prompt", "temperature", "max_tokens"]
 COMPARISON_TEMPERATURE = 0.7
 COMPARISON_MAX_TOKENS = 500
 
-DISCOVERY_PARAMETERS = ["genre_id", "year", "language", "sort_by", "page", "max_results"]
+DISCOVERY_PARAMETERS = ["genre_id", "year", "original_language", "sort_by", "page", "max_results"]
 SEARCH_PARAMETERS = ["query", "year", "display_language", "page", "max_results"]
 FIRST_PAGE = 1
 DISCOVERY_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
@@ -310,7 +310,7 @@ class ToolCase:
 DISCOVERY_ARGUMENTS: dict[str, Any] = {
     "genre_id": REQUESTED_GENRE_ID,
     "year": REQUESTED_YEAR,
-    "language": REQUESTED_LANGUAGE,
+    "original_language": REQUESTED_LANGUAGE,
     "sort_by": REQUESTED_SORT_BY,
     "page": REQUESTED_PAGE,
     "max_results": REQUESTED_MAX_RESULTS,
