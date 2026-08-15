@@ -9,6 +9,7 @@ from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN
 from greenroom.tools.discovery.validation import (
     VALID_SORT_OPTIONS,
     validate_discovery_params,
+    validate_search_params,
 )
 
 # --------------
@@ -25,9 +26,13 @@ MAX_RESULTS_RANGE_MESSAGE = (
     f"max_results must be between {MAX_RESULTS_MIN} and {MAX_RESULTS_MAX}"
 )
 LANGUAGE_MESSAGE = "language must be a 2-character ISO 639-1 code"
+DISPLAY_LANGUAGE_MESSAGE = "display_language must be a 2-character ISO 639-1 code"
 SORT_BY_MESSAGE = "sort_by must be one of"
+QUERY_MESSAGE = "query must be a non-empty string"
 
-# Codes rejected as malformed: wrong length, or non-alphabetic characters
+SAMPLE_QUERY = "sample-title"
+
+# Codes rejected for either flow: wrong length, or non-alphabetic characters
 MALFORMED_LANGUAGE_CODES = ["", "e", "eng", "english", "e1", "12", "e-"]
 
 # One wholly valid call per flow, so each test can override the single field it exercises.
@@ -39,6 +44,14 @@ VALID_DISCOVERY_PARAMS = {
     "sort_by": "popularity.desc",
 }
 
+VALID_SEARCH_PARAMS = {
+    "query": SAMPLE_QUERY,
+    "year": 2024,
+    "page": 1,
+    "max_results": MAX_RESULTS_MAX,
+    "display_language": "en",
+}
+
 # --------------
 # Helpers
 # --------------
@@ -46,6 +59,11 @@ VALID_DISCOVERY_PARAMS = {
 def discovery_params(**overrides):
     """Build a valid discovery parameter set with the given fields replaced."""
     return {**VALID_DISCOVERY_PARAMS, **overrides}
+
+
+def search_params(**overrides):
+    """Build a valid search parameter set with the given fields replaced."""
+    return {**VALID_SEARCH_PARAMS, **overrides}
 
 
 # -------------------------
@@ -138,3 +156,50 @@ def test_rejects_unsupported_sort_option(sort_by):
     """Sort orders outside the supported vocabulary are rejected."""
     with pytest.raises(ValueError, match=SORT_BY_MESSAGE):
         validate_discovery_params(**discovery_params(sort_by=sort_by))
+
+
+# ----------------------
+# Tests for search flow
+# ----------------------
+
+def test_accepts_fully_populated_valid_search_params():
+    """Every search parameter supplied and valid is accepted."""
+    validate_search_params(**VALID_SEARCH_PARAMS)
+
+
+def test_accepts_omitted_optional_search_filters():
+    """The optional search filters are all independently skippable."""
+    validate_search_params(**search_params(year=None, display_language=None))
+
+
+@pytest.mark.parametrize("query", ["", "   ", "\t\n"])
+def test_rejects_blank_query(query):
+    """A search with no title to look for is rejected."""
+    with pytest.raises(ValueError, match=QUERY_MESSAGE):
+        validate_search_params(**search_params(query=query))
+
+
+@pytest.mark.parametrize("display_language", MALFORMED_LANGUAGE_CODES)
+def test_rejects_malformed_display_language(display_language):
+    """The search flow reports the malformed code under its own parameter name."""
+    with pytest.raises(ValueError, match=DISPLAY_LANGUAGE_MESSAGE):
+        validate_search_params(**search_params(display_language=display_language))
+
+
+@pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN - 1, MAX_RESULTS_MAX + 1])
+def test_rejects_search_max_results_outside_the_bounds(max_results: int) -> None:
+    """The search flow enforces the same result-count bounds as discovery."""
+    with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
+        validate_search_params(**search_params(max_results=max_results))
+
+
+def test_rejects_search_year_before_catalog_start():
+    """The search flow enforces the same catalog floor as discovery."""
+    with pytest.raises(ValueError, match=YEAR_MESSAGE):
+        validate_search_params(**search_params(year=BELOW_MIN_YEAR))
+
+
+def test_rejects_non_positive_search_page():
+    """The search flow enforces the same 1-indexed pagination as discovery."""
+    with pytest.raises(ValueError, match=PAGE_MESSAGE):
+        validate_search_params(**search_params(page=0))

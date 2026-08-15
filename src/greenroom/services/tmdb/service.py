@@ -5,12 +5,12 @@ import asyncio
 from greenroom.models.genre import GenreList
 from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
-from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RESULTS
 from greenroom.services.tmdb.client import TMDBClient
 from greenroom.services.tmdb.config import TMDB_FILM_CONFIG, TMDB_TELEVISION_CONFIG, TMDBMediaConfig
 from greenroom.services.tmdb.genre_mapper import to_genre_list
 from greenroom.services.tmdb.media_mapper import to_media_list
-from greenroom.services.tmdb.params import build_discover_params
+from greenroom.services.tmdb.params import build_discover_params, build_search_params
 
 
 # Genre endpoints are fixed per media type rather than configurable, because
@@ -79,6 +79,42 @@ class TMDBService:
         config = self._config_for(media_type)
         params = build_discover_params(config, genre_id, year, language, sort_by, page)
         data = await self.client.get(f"/discover/{config.endpoint}", params)
+
+        return to_media_list(data, config, media_type, page, max_results)
+
+    async def search_media(
+        self,
+        media_type: MediaType,
+        query: str,
+        year: int | None = None,
+        display_language: str | None = None,
+        page: int = 1,
+        max_results: int = SEARCH_MAX_RESULTS
+    ) -> MediaList:
+        """From TMDB, search for one element (or short list) that matches the given title.
+
+        Args:
+            media_type: Type-safe media type (see media_types module)
+            query: Title text to search for
+            year: Optional year filter (release/air year)
+            display_language: Optional ISO 639-1 code selecting the language the
+                              title and overview are returned in. The search
+                              endpoints cannot filter by original language
+            page: Page number (1-indexed)
+            max_results: Maximum results to return
+
+        Returns:
+            MediaList with standardized Media objects, ordered by TMDB relevance
+
+        Raises:
+            ValueError: If media_type is not supported
+            APIResponseError: For TMDB API errors
+            APIConnectionError: For network errors
+        """
+
+        config = self._config_for(media_type)
+        params = build_search_params(config, query, year, display_language, page)
+        data = await self.client.get(f"/search/{config.endpoint}", params)
 
         return to_media_list(data, config, media_type, page, max_results)
 

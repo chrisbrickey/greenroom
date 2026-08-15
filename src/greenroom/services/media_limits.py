@@ -20,6 +20,7 @@ PROVIDER_PAGE_SIZE: int = 20 # number of results a single page returned from the
 #-----------------------------
 
 DISCOVER_MAX_RESULTS: int = 20  # a long list when filtering by criteria
+SEARCH_MAX_RESULTS: int = 5     # a short list when searching for one element by title
 
 # Bounds accepted for the max_results parameter.
 MAX_RESULTS_MIN: int = 1

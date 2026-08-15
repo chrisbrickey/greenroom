@@ -42,6 +42,34 @@ def validate_discovery_params(
     _validate_sort_by(sort_by)
 
 
+def validate_search_params(
+    *,
+    query: str,
+    year: int | None,
+    page: int,
+    max_results: int,
+    display_language: str | None
+) -> None:
+    """Validate the parameters accepted by the search tools.
+
+    Raises:
+        ValueError: If any parameter is invalid
+    """
+
+    _validate_query(query)
+    _validate_year(year)
+    _validate_page(page)
+    _validate_max_results(max_results)
+    _validate_language_code(display_language, param_name="display_language")
+
+
+def _validate_query(query: str) -> None:
+    """Reject a missing or whitespace-only title."""
+
+    if not query or not query.strip():
+        raise ValueError("query must be a non-empty string")
+
+
 def _validate_year(year: int | None) -> None:
     """Reject years before the start of the catalog."""
 

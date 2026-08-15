@@ -1,4 +1,4 @@
-"""Tests for the orchestration layer beneath the MCP tools for content retrieval."""
+"""Tests the orchestration layer of MCP tools that browse content with filtering criteria."""
 
 import pytest
 

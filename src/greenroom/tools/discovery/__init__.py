@@ -8,7 +8,7 @@ Tool Flow:
 
 - orchestration layer
   These methods contain the orchestration logic extracted from the registration layer
-  (e.g. fetch_films, fetch_television) that is publicly available and testable without spinning up a server.
+  (e.g. fetch_films, find_films) that is publicly available and testable without spinning up a server.
 
 - util layer
   Helper modules that can be shared across tools to support consistency in the downstream logic
@@ -23,6 +23,10 @@ from greenroom.tools.discovery.discovery_tools import (
     fetch_television,
     register_discovery_tools,
 )
+from greenroom.tools.discovery.search_tools import (
+    find_films,
+    register_search_tools,
+)
 
 
 def register_all_discovery_tools(mcp: FastMCP) -> None:
@@ -33,10 +37,12 @@ def register_all_discovery_tools(mcp: FastMCP) -> None:
     service = TMDBService()
 
     register_discovery_tools(mcp, service)
+    register_search_tools(mcp, service)
 
 
 __all__ = [
     "register_all_discovery_tools",
     "fetch_films",
     "fetch_television",
+    "find_films",
 ]

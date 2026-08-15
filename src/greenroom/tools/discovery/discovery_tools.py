@@ -1,6 +1,7 @@
 """Filter-by-criteria media tools for the greenroom MCP server.
 
 These tools browse by criteria such as genre or year.
+See search_tools for looking up a specific title the user named.
 """
 
 from fastmcp import FastMCP
