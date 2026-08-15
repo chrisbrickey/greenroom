@@ -9,7 +9,7 @@ from pytest_httpx import HTTPXMock
 from greenroom.exceptions import APIConnectionError, APIResponseError
 from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.service import TMDBService
-from greenroom.models.media import Media
+from greenroom.models.media import Media, MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 from .conftest import TMDB_BASE_URL, TEST_API_KEY, TRUNCATED_MAX_RESULTS, build_oversized_page
@@ -86,15 +86,34 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
     service = TMDBService()
     result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=2024, page=1)
 
-    assert result.page == 1
-    assert result.total_results == 100
-    assert result.total_pages == 5
-    assert len(result.results) == 2
-    assert result.results[0].title == "Test Film One"
-    assert result.results[0].rating == 7.5
-    assert result.results[0].genre_ids == [18, 53]
-    assert result.results[0].media_type == MEDIA_TYPE_FILM
-    assert result.results[1].title == "Test Film Two"
+    # Compared whole, so a field this test forgot to name cannot drift unnoticed.
+    # This also pins down that provider-only fields (poster_path, popularity)
+    # are dropped rather than carried onto Media.
+    assert result == MediaList(
+        page=1,
+        total_results=100,
+        total_pages=5,
+        results=[
+            Media(
+                id="1",
+                media_type=MEDIA_TYPE_FILM,
+                title="Test Film One",
+                date=date(2024, 1, 1),
+                rating=7.5,
+                description="Sample description for the first sample film.",
+                genre_ids=[18, 53],
+            ),
+            Media(
+                id="2",
+                media_type=MEDIA_TYPE_FILM,
+                title="Test Film Two",
+                date=date(2024, 2, 2),
+                rating=8.0,
+                description="Sample description for the second sample film.",
+                genre_ids=[80, 18],
+            ),
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -134,16 +153,34 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
     service = TMDBService()
     result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2024, page=1)
 
-    assert result.page == 1
-    assert result.total_results == 50
-    assert result.total_pages == 3
-    assert len(result.results) == 2
-    assert result.results[0].title == "Test Show One"
-    assert result.results[0].rating == 7.8
-    assert result.results[0].genre_ids == [10765, 18, 10759]
-    assert result.results[0].media_type == MEDIA_TYPE_TELEVISION
-    assert result.results[0].date.isoformat() == "2024-03-03"
-    assert result.results[1].title == "Test Show Two"
+    # Compared whole, so a field this test forgot to name cannot drift unnoticed.
+    # TMDB names the television title and date fields differently from films
+    # (name/first_air_date), so this pins down that mapping too.
+    assert result == MediaList(
+        page=1,
+        total_results=50,
+        total_pages=3,
+        results=[
+            Media(
+                id="3",
+                media_type=MEDIA_TYPE_TELEVISION,
+                title="Test Show One",
+                date=date(2024, 3, 3),
+                rating=7.8,
+                description="Sample description for the first sample television show.",
+                genre_ids=[10765, 18, 10759],
+            ),
+            Media(
+                id="4",
+                media_type=MEDIA_TYPE_TELEVISION,
+                title="Test Show Two",
+                date=date(2024, 4, 4),
+                rating=8.2,
+                description="Sample description for the second sample television show.",
+                genre_ids=[18, 80],
+            ),
+        ],
+    )
 
 
 @pytest.mark.asyncio
