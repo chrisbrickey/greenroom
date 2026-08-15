@@ -259,7 +259,7 @@ async def test_search_media_uses_television_year_param(monkeypatch, httpx_mock: 
 
 @pytest.mark.asyncio
 async def test_search_media_language_selects_display_language(monkeypatch, httpx_mock: HTTPXMock):
-    """Test language is sent as the display language, not as an original-language filter."""
+    """Test language is sent as the display language, not as an original language filter."""
     monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
 
     httpx_mock.add_response(

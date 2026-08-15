@@ -28,6 +28,7 @@ import pytest
 from dotenv import load_dotenv
 
 from greenroom.models.media import MediaList
+from greenroom.services.media_limits import PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.service import TMDBService
 
 # Production code loads .env in server.py, so this tier loads it for itself
@@ -35,13 +36,16 @@ load_dotenv()
 
 API_KEY_VARIABLE = "TMDB_API_KEY"
 
-# Pagination tests assert that the next page advances through the catalog
-# instead of asserting that consecutive pages are unique. Why? Because
-# provider pagination windows are not perfectly consistent.
-# For example, I observed with TMDB that a returned title sitting on the
-# boundary between two pages can be served on both of them.
-# It's a property of the provider that we must accommodate.
-MAX_BOUNDARY_OVERLAP = 2
+# MAX_BOUNDARY_OVERLAP helps pagination tests to assert that the next page advances through the catalog
+# instead of asserting that consecutive pages are unique. Why? Because provider pagination windows
+# are not perfectly consistent. For example, I observed with TMDB that a returned title sitting on the
+# boundary between two pages can be served on both of them. It's a property of the provider that we accommodate.
+#
+# MAX_BOUNDARY_OVERLAP is set by what would actually break the test, not by how much TMDB drifts.
+# If pagination broke on the TMDB server and page two repeated page one, then none of page two's titles would be new.
+# Allowing a quarter of the page to repeat captures a complete pagination failure (all repeats).
+# Allowing a lesser portion of overlap could raise false alarms on days when the catalog shuffles more than usual.
+MAX_BOUNDARY_OVERLAP = PROVIDER_PAGE_SIZE // 4
 
 
 @pytest.fixture

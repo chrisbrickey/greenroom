@@ -26,7 +26,7 @@ def validate_discovery_params(
     year: int | None,
     page: int,
     max_results: int,
-    language: str | None,
+    original_language: str | None,
     sort_by: str | None
 ) -> None:
     """Validate the parameters accepted by the discovery tools.
@@ -38,7 +38,7 @@ def validate_discovery_params(
     _validate_year(year)
     _validate_page(page)
     _validate_max_results(max_results)
-    _validate_language_code(language, param_name="language")
+    _validate_language_code(original_language, param_name="original_language")
     _validate_sort_by(sort_by)
 
 

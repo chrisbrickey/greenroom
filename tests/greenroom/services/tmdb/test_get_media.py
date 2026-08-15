@@ -418,8 +418,8 @@ async def test_get_media_requests_the_page_it_was_given(
 
 
 @pytest.mark.asyncio
-async def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock):
-    """Test language parameter filters media correctly."""
+async def test_get_media_filters_by_original_language(monkeypatch, httpx_mock: HTTPXMock):
+    """Test original_language parameter filters media correctly."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     mock_response = {
@@ -437,12 +437,12 @@ async def test_get_media_filters_by_language(monkeypatch, httpx_mock: HTTPXMock)
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, language="es")
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM, original_language="es")
 
     assert len(result.results) == 1
     assert result.results[0].title == "Spanish Film"
 
-    # Verify the URL included the language parameter
+    # Verify the URL included the original language parameter
     request = httpx_mock.get_requests()[0]
     assert "with_original_language=es" in str(request.url)
 

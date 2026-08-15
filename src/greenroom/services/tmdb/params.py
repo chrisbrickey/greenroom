@@ -24,7 +24,7 @@ def build_discover_params(
     config: TMDBMediaConfig,
     genre_id: int | None,
     year: int | None,
-    language: str | None,
+    original_language: str | None,
     sort_by: str | None,
     page: int
 ) -> TMDBParams:
@@ -34,7 +34,7 @@ def build_discover_params(
         config: TMDB media configuration
         genre_id: Optional genre filter
         year: Optional year filter
-        language: Optional original-language filter
+        original_language: Optional original language filter
         sort_by: Sort order (None defaults to "popularity.desc")
         page: Page number
 
@@ -55,8 +55,8 @@ def build_discover_params(
     if year is not None:
         params[config.year_param] = year
 
-    if language is not None:
-        params["with_original_language"] = language
+    if original_language is not None:
+        params["with_original_language"] = original_language
 
     return params
 

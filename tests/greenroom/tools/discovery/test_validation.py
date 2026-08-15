@@ -25,7 +25,7 @@ PAGE_MESSAGE = f"page must be {MIN_PAGE} or greater"
 MAX_RESULTS_RANGE_MESSAGE = (
     f"max_results must be between {MAX_RESULTS_MIN} and {MAX_RESULTS_MAX}"
 )
-LANGUAGE_MESSAGE = "language must be a 2-character ISO 639-1 code"
+ORIGINAL_LANGUAGE_MESSAGE = "original_language must be a 2-character ISO 639-1 code"
 DISPLAY_LANGUAGE_MESSAGE = "display_language must be a 2-character ISO 639-1 code"
 SORT_BY_MESSAGE = "sort_by must be one of"
 QUERY_MESSAGE = "query must be a non-empty string"
@@ -40,7 +40,7 @@ VALID_DISCOVERY_PARAMS = {
     "year": 2024,
     "page": 1,
     "max_results": MAX_RESULTS_MAX,
-    "language": "en",
+    "original_language": "en",
     "sort_by": "popularity.desc",
 }
 
@@ -77,7 +77,7 @@ def test_accepts_fully_populated_valid_discovery_params():
 
 def test_accepts_omitted_optional_discovery_filters():
     """The optional filters are all independently skippable."""
-    validate_discovery_params(**discovery_params(year=None, language=None, sort_by=None))
+    validate_discovery_params(**discovery_params(year=None, original_language=None, sort_by=None))
 
 
 @pytest.mark.parametrize("year", [BELOW_MIN_YEAR, 0, -1])
@@ -119,22 +119,22 @@ def test_rejects_discovery_max_results_outside_the_bounds(max_results: int) -> N
         validate_discovery_params(**discovery_params(max_results=max_results))
 
 
-@pytest.mark.parametrize("language", ["en", "es", "fr", None])
-def test_accepts_valid_language_code(language):
+@pytest.mark.parametrize("original_language", ["en", "es", "fr", None])
+def test_accepts_valid_original_language_code(original_language):
     """Two-letter alphabetic codes are accepted, as is omitting the filter."""
-    validate_discovery_params(**discovery_params(language=language))
+    validate_discovery_params(**discovery_params(original_language=original_language))
 
 
-def test_accepts_uppercase_language_code():
+def test_accepts_uppercase_original_language_code():
     """Case is not currently enforced on language codes."""
-    validate_discovery_params(**discovery_params(language="EN"))
+    validate_discovery_params(**discovery_params(original_language="EN"))
 
 
-@pytest.mark.parametrize("language", MALFORMED_LANGUAGE_CODES)
-def test_rejects_malformed_language_code(language):
+@pytest.mark.parametrize("original_language", MALFORMED_LANGUAGE_CODES)
+def test_rejects_malformed_original_language_code(original_language):
     """Codes of the wrong length or with non-alphabetic characters are rejected."""
-    with pytest.raises(ValueError, match=LANGUAGE_MESSAGE):
-        validate_discovery_params(**discovery_params(language=language))
+    with pytest.raises(ValueError, match=ORIGINAL_LANGUAGE_MESSAGE):
+        validate_discovery_params(**discovery_params(original_language=original_language))
 
 
 @pytest.mark.parametrize("sort_by", VALID_SORT_OPTIONS)

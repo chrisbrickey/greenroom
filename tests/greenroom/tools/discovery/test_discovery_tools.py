@@ -32,7 +32,7 @@ class TestFetchFilms:
             media_type=MEDIA_TYPE_FILM,
             genre_id=None,
             year=None,
-            language=None,
+            original_language=None,
             sort_by=None,
             page=1,
             max_results=DISCOVER_MAX_RESULTS
@@ -47,7 +47,7 @@ class TestFetchFilms:
             mock_media_service,
             genre_id=28,
             year=2024,
-            language="es",
+            original_language="es",
             sort_by="vote_average.desc",
             page=3,
             max_results=15
@@ -57,7 +57,7 @@ class TestFetchFilms:
             media_type=MEDIA_TYPE_FILM,
             genre_id=28,
             year=2024,
-            language="es",
+            original_language="es",
             sort_by="vote_average.desc",
             page=3,
             max_results=15
@@ -86,19 +86,19 @@ class TestFetchFilms:
         await fetch_films(mock_media_service, page=1)
 
     @pytest.mark.asyncio
-    async def test_validates_language(self, mock_media_service, sample_film_media_list):
-        """Test fetch_films validates language parameter."""
-        with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            await fetch_films(mock_media_service, language="eng")
-        with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            await fetch_films(mock_media_service, language="e")
-        with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            await fetch_films(mock_media_service, language="12")
+    async def test_validates_original_language(self, mock_media_service, sample_film_media_list):
+        """Test fetch_films validates original_language parameter."""
+        with pytest.raises(ValueError, match="original_language must be a 2-character ISO 639-1 code"):
+            await fetch_films(mock_media_service, original_language="eng")
+        with pytest.raises(ValueError, match="original_language must be a 2-character ISO 639-1 code"):
+            await fetch_films(mock_media_service, original_language="e")
+        with pytest.raises(ValueError, match="original_language must be a 2-character ISO 639-1 code"):
+            await fetch_films(mock_media_service, original_language="12")
 
         # Valid codes should be accepted
         mock_media_service.get_media.return_value = sample_film_media_list
-        await fetch_films(mock_media_service, language="en")
-        await fetch_films(mock_media_service, language="fr")
+        await fetch_films(mock_media_service, original_language="en")
+        await fetch_films(mock_media_service, original_language="fr")
 
     @pytest.mark.asyncio
     async def test_validates_sort_by(self, mock_media_service, sample_film_media_list):
@@ -146,7 +146,7 @@ class TestFetchTelevision:
             media_type=MEDIA_TYPE_TELEVISION,
             genre_id=None,
             year=None,
-            language=None,
+            original_language=None,
             sort_by=None,
             page=1,
             max_results=DISCOVER_MAX_RESULTS
@@ -161,7 +161,7 @@ class TestFetchTelevision:
             mock_media_service,
             genre_id=18,
             year=2023,
-            language="fr",
+            original_language="fr",
             sort_by="date.asc",
             page=5,
             max_results=12
@@ -171,7 +171,7 @@ class TestFetchTelevision:
             media_type=MEDIA_TYPE_TELEVISION,
             genre_id=18,
             year=2023,
-            language="fr",
+            original_language="fr",
             sort_by="date.asc",
             page=5,
             max_results=12
@@ -200,14 +200,14 @@ class TestFetchTelevision:
         await fetch_television(mock_media_service, page=1)
 
     @pytest.mark.asyncio
-    async def test_validates_language(self, mock_media_service, sample_tv_media_list):
-        """Test fetch_television validates language parameter."""
-        with pytest.raises(ValueError, match="language must be a 2-character ISO 639-1 code"):
-            await fetch_television(mock_media_service, language="english")
+    async def test_validates_original_language(self, mock_media_service, sample_tv_media_list):
+        """Test fetch_television validates original_language parameter."""
+        with pytest.raises(ValueError, match="original_language must be a 2-character ISO 639-1 code"):
+            await fetch_television(mock_media_service, original_language="english")
 
         # Valid codes should be accepted
         mock_media_service.get_media.return_value = sample_tv_media_list
-        await fetch_television(mock_media_service, language="en")
+        await fetch_television(mock_media_service, original_language="en")
 
     @pytest.mark.asyncio
     async def test_validates_sort_by(self, mock_media_service, sample_tv_media_list):
