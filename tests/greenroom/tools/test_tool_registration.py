@@ -108,8 +108,8 @@ COMPARISON_TEMPERATURE = 0.7
 COMPARISON_MAX_TOKENS = 500
 
 DISCOVERY_PARAMETERS = ["genre_id", "year", "language", "sort_by", "page", "max_results"]
-DISCOVER_PAGE = 1
-DISCOVERY_DEFAULTS: dict[str, Any] = {"page": DISCOVER_PAGE, "max_results": DISCOVER_MAX_RESULTS}
+FIRST_PAGE = 1
+DISCOVERY_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
 
 
 @dataclass(frozen=True)
@@ -247,9 +247,9 @@ async def test_tool_advertises_expected_defaults(request, case: SchemaCase):
     assert advertised == case.expected_defaults
 
 
-# =============================================================================
-# Argument routing through the registered discovery tools
-# =============================================================================
+# ================================================
+# Argument routing through the registered tools
+# ================================================
 
 # Distinct values so that a mix-up between two arguments changes the outgoing request
 REQUESTED_GENRE_ID = 28
@@ -266,7 +266,16 @@ TELEVISION_RESPONSE_FIELDS = ("name", "first_air_date")
 
 @dataclass(frozen=True)
 class ToolCase:
-    """A registered tool paired with the provider request it is expected to produce."""
+    """A registered tool paired with the provider request it is expected to produce.
+
+    Attributes:
+        tool_name: Name the tool is registered under
+        arguments: Arguments an agent supplies when calling the tool
+        expected_path: Provider URL path the tool is expected to call
+        expected_provider_params: Provider query params the arguments map onto
+        expected_media_type: Media type the returned results carry
+        response_fields: Provider title and date field names for this media type
+    """
     tool_name: str
     arguments: dict[str, Any]
     expected_path: str
@@ -311,7 +320,7 @@ TOOL_CASES = [
     ),
 ]
 
-TOOL_NAMES = [case.tool_name for case in TOOL_CASES]
+DISCOVERY_TOOL_NAMES = [case.tool_name for case in TOOL_CASES]
 
 
 def build_two_result_response(title_field: str, date_field: str) -> dict[str, Any]:
@@ -322,7 +331,7 @@ def build_two_result_response(title_field: str, date_field: str) -> dict[str, An
         date_field: Provider date field name ("release_date" or "first_air_date")
 
     Returns:
-        Dictionary shaped like a TMDB discover response
+        Dictionary shaped like a TMDB content response
     """
     return {
         "page": REQUESTED_PAGE,
@@ -541,7 +550,7 @@ UNSUPPORTED_SORT_BY = "not-a-real-field.desc"
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("tool_name", TOOL_NAMES)
+@pytest.mark.parametrize("tool_name", DISCOVERY_TOOL_NAMES)
 async def test_tool_rejects_unsupported_sort_order(discovery_server, httpx_mock, tool_name: str):
     """Test that an invalid argument is rejected before any provider call is made."""
     async with Client(discovery_server) as client:
