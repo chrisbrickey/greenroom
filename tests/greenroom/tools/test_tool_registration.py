@@ -12,14 +12,10 @@ import re
 import pytest
 from dataclasses import dataclass, field
 from typing import Any
-from fastmcp import Client, FastMCP
+from fastmcp import Client
 from fastmcp.client.sampling import SamplingMessage, SamplingParams
 from fastmcp.exceptions import ToolError
 
-from greenroom.tools import register_all_tools
-from greenroom.tools.agent_tools import register_agent_tools
-from greenroom.tools.discovery import register_all_discovery_tools
-from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RESULTS
@@ -27,52 +23,10 @@ from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RES
 
 FASTMCP_RESULT_KEY = "result" # the key under which bare values are nested when using FastMCP
 PROVIDER_NAME = "TMDB"
-TEST_API_KEY = "test_api_key"
 FILM_QUERY = "Test Film"
 TELEVISION_QUERY = "Test Show"
 
-
-# =============================================================================
-# Servers, one per registration function
-# =============================================================================
-
-
-@pytest.fixture
-def discovery_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server with the discovery tools registered."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_all_discovery_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def genre_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server with the genre tools registered."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_genre_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def agent_server() -> FastMCP:
-    """Create a FastMCP server with the agent comparison tools registered."""
-    mcp = FastMCP("test-server")
-    register_agent_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def complete_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server carrying every tool the project ships."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_all_tools(mcp)
-    return mcp
+# The servers these tests drive, one per registration function, come from conftest
 
 
 @dataclass
@@ -211,7 +165,7 @@ REGISTRATION_CASES = [
 REGISTRATION_CASE_IDS = [server_fixture for server_fixture, _ in REGISTRATION_CASES]
 
 
-def case_id(case: SchemaCase) -> str:
+def case_id(case: "SchemaCase | ToolCase") -> str:
     """Name each parametrized case after the tool it exercises."""
     return case.tool_name
 
@@ -423,13 +377,8 @@ def build_two_result_response(title_field: str, date_field: str) -> dict[str, An
     }
 
 
-def discovery_case_id(case: ToolCase) -> str:
-    """Name each parametrized case after the tool it exercises."""
-    return case.tool_name
-
-
 @pytest.mark.asyncio
-@pytest.mark.parametrize("case", TOOL_CASES, ids=discovery_case_id)
+@pytest.mark.parametrize("case", TOOL_CASES, ids=case_id)
 async def test_tool_forwards_arguments_to_provider(discovery_server, httpx_mock, case: ToolCase):
     """Test each tool routes its arguments onto the matching provider parameters."""
     httpx_mock.add_response(json=build_two_result_response(*case.response_fields))
