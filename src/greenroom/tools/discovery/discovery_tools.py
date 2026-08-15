@@ -1,18 +1,6 @@
-"""Tools that retrieve media for the greenroom MCP server.
+"""Filter-by-criteria media tools for the greenroom MCP server.
 
-Flow:
-
-- light registration layer
-  These are FastMCP-annotated tool methods that delegate to methods that contain the domain logic.
-  Testing the registration layer requires spinning up a server. See registration tests.
-
-- orchestration layer
-  These methods contain the orchestration logic extracted from the registration layer
-  (e.g. fetch_films, fetch_television) that is publicly available and testable without spinning up a server.
-
-- util layer
-  Helper modules that can be shared across tools to support consistency in the downstream logic
-  (e.g. validation of inputs -> service calls -> formatting of response).
+These tools browse by criteria such as genre or year.
 """
 
 from fastmcp import FastMCP
@@ -33,9 +21,9 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         service: Media provider the registered tools delegate to
     """
 
-# -----------------------------------------------
-# Discovery tools (list media by filter criteria)
-# -----------------------------------------------
+# -------------
+# Registration
+# -------------
 
     @mcp.tool()
     async def discover_films(
@@ -140,6 +128,10 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
         return await fetch_television(service, genre_id, year, language, sort_by, page, max_results)
+
+# -------------
+# Orchestration
+# -------------
 
 async def fetch_films(
     media_service: MediaService,

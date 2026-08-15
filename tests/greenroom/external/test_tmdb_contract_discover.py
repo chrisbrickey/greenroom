@@ -1,9 +1,5 @@
 """Tests on the API contract with TMDB for discovery concerns.
 
-As of 2026, TMDB ignores unrecognized parameters (returns 200 code).
-So asserting on a successful call does not test parameters well.
-Instead, tests should inspect the returned payload.
-
 Run with: uv run pytest -m external
 """
 
@@ -11,12 +7,13 @@ from datetime import date
 
 import pytest
 
-from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.params import DEFAULT_SORT_ORDER
 from greenroom.services.tmdb.service import TMDBService
 from greenroom.tools.discovery.validation import VALID_SORT_OPTIONS
+
+from .conftest import MAX_BOUNDARY_OVERLAP, media_ids_in_returned_order
 
 pytestmark = pytest.mark.external
 
@@ -29,6 +26,10 @@ MEDIA_TYPES = (MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION)
 
 DESCENDING_DIRECTION = "desc"
 ASCENDING_DIRECTION = "asc"
+
+# Far enough ahead that TMDB's catalog cannot hold a release for it.
+# Used to confirm how the provider responds with zero matches.
+YEARS_BEYOND_CATALOG = 50
 
 # How each sorting parameter (that is offered by MCP tools) is checked.
 # None means the ordering cannot be read, so that sort is checked by comparing its two directions instead.
@@ -48,10 +49,6 @@ MEDIA_ATTRIBUTE_BY_SORT_ORDER: dict[str, str | None] = {
 #------------
 # Helpers
 #------------
-
-def media_ids_in_returned_order(media_list: MediaList) -> list[str]:
-    """Ids, in the order TMDB returned them."""
-    return [item.id for item in media_list.results]
 
 def media_attribute_for(sort_order: str) -> str | None:
     """Media attribute a sort order can be read from, or None if there is none.
@@ -106,7 +103,9 @@ async def test_sort_order_actually_orders_the_results(
     names that field differently for films and TV, so this checks the order of
     the results rather than the string we sent.
     """
-    result = await tmdb_service.get_media(media_type=media_type, sort_by=sort_by)
+    result = await tmdb_service.get_media(
+        media_type=media_type, sort_by=sort_by, max_results=PROVIDER_PAGE_SIZE
+    )
 
     attribute = media_attribute_for(sort_by)
     # Skips entries where the attribute is missing. TMDB leaves dates and ratings
@@ -129,8 +128,12 @@ async def test_sort_direction_changes_the_results(
     ascending: str
 ) -> None:
     """Changing sort direction changes the order of results."""
-    descending_results = await tmdb_service.get_media(media_type=media_type, sort_by=descending)
-    ascending_results = await tmdb_service.get_media(media_type=media_type, sort_by=ascending)
+    descending_results = await tmdb_service.get_media(
+        media_type=media_type, sort_by=descending, max_results=PROVIDER_PAGE_SIZE
+    )
+    ascending_results = await tmdb_service.get_media(
+        media_type=media_type, sort_by=ascending, max_results=PROVIDER_PAGE_SIZE
+    )
 
     assert descending_results.results and ascending_results.results
     assert (
@@ -146,15 +149,19 @@ async def test_genre_filter_returns_only_media_in_that_genre(
     media_type: str
 ) -> None:
     """Filtering by genre returns only media in that genre."""
+
     # Read the genre from TMDB rather than hardcoded, so the test does not embed
     # genre data that can change. The lowest id keeps every run on the same genre.
     endpoint = f"/genre/{tmdb_service.config_map[media_type].endpoint}/list"
     payload = await tmdb_service.client.get(endpoint, {})
     genre_ids = [entry["id"] for entry in payload["genres"]]
+
     assert genre_ids, f"TMDB published no genres for {media_type}"
     genre_id = min(genre_ids)
 
-    result = await tmdb_service.get_media(media_type=media_type, genre_id=genre_id)
+    result = await tmdb_service.get_media(
+        media_type=media_type, genre_id=genre_id, max_results=PROVIDER_PAGE_SIZE
+    )
 
     assert result.results
     for item in result.results:
@@ -169,7 +176,9 @@ async def test_year_filter_returns_only_media_from_that_year(
 ) -> None:
     """Filtering by year returns only media from that year."""
     requested_year = date.today().year - 2 # two years ago
-    result = await tmdb_service.get_media(media_type=media_type, year=requested_year)
+    result = await tmdb_service.get_media(
+        media_type=media_type, year=requested_year, max_results=PROVIDER_PAGE_SIZE
+    )
 
     assert result.results
     for item in result.results:
@@ -186,11 +195,13 @@ async def test_original_language_filter_changes_which_media_are_returned(
     """Filtering by original language changes which media come back."""
     sample = await tmdb_service.get_media(
         media_type=media_type,
-        language="en"
+        language="en",
+        max_results=PROVIDER_PAGE_SIZE
     )
     alternate = await tmdb_service.get_media(
         media_type=media_type,
-        language="fr"
+        language="fr",
+        max_results=PROVIDER_PAGE_SIZE
     )
 
     sample_ids = set(media_ids_in_returned_order(sample))
@@ -202,11 +213,29 @@ async def test_original_language_filter_changes_which_media_are_returned(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("media_type", MEDIA_TYPES)
+async def test_filters_matching_nothing_return_empty_results_not_an_error(
+    tmdb_service: TMDBService,
+    media_type: str
+) -> None:
+    """A filter combination that doesn't match anything in the provider's catalog returns empty result set.
+
+    This confirms that the provider does not return an error when there is no match.
+    If an error is ever returned, then greenroom needs to be adjusted to handle such an error gracefully.
+    """
+    unreachable_year = date.today().year + YEARS_BEYOND_CATALOG
+    result = await tmdb_service.get_media(media_type=media_type, year=unreachable_year)
+
+    assert result.results == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("media_type", MEDIA_TYPES)
 async def test_a_full_discover_page_holds_the_result_count_we_assume(
     tmdb_service: TMDBService,
     media_type: str
 ) -> None:
     """A full page holds exactly PROVIDER_PAGE_SIZE results.
+
     This value is relevant upstream for bounding parameters like max_results.
     """
     endpoint = f"/discover/{tmdb_service.config_map[media_type].endpoint}"
@@ -214,3 +243,24 @@ async def test_a_full_discover_page_holds_the_result_count_we_assume(
 
     assert payload["total_pages"] > 1, "need an unfiltered query spanning many pages"
     assert len(payload["results"]) == PROVIDER_PAGE_SIZE
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("media_type", MEDIA_TYPES)
+async def test_consecutive_pages_return_different_media(
+    tmdb_service: TMDBService,
+    media_type: str
+) -> None:
+    """Pagination advances through the results rather than repeating a page."""
+    first = await tmdb_service.get_media(
+        media_type=media_type, page=1, max_results=PROVIDER_PAGE_SIZE
+    )
+    second = await tmdb_service.get_media(
+        media_type=media_type, page=2, max_results=PROVIDER_PAGE_SIZE
+    )
+
+    first_ids = set(media_ids_in_returned_order(first))
+    second_ids = set(media_ids_in_returned_order(second))
+
+    assert first_ids and second_ids
+    assert len(second_ids - first_ids) >= PROVIDER_PAGE_SIZE - MAX_BOUNDARY_OVERLAP

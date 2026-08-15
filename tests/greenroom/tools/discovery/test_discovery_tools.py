@@ -4,7 +4,6 @@ import pytest
 
 from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.tools.discovery.discovery_tools import fetch_films, fetch_television
-from greenroom.models.media import MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
 
@@ -12,33 +11,15 @@ class TestFetchFilms:
     """Tests for fetch_films orchestration function."""
 
     @pytest.mark.asyncio
-    async def test_returns_formatted_results(self, mock_media_service, sample_film_media_list):
-        """Test fetch_films returns correctly formatted results."""
+    async def test_returns_formatted_results(
+        self, mock_media_service, sample_film_media_list, expected_film_payload
+    ):
+        """Test fetch_films formats every field of the service payload."""
         mock_media_service.get_media.return_value = sample_film_media_list
 
         result = await fetch_films(mock_media_service)
 
-        assert result["page"] == 1
-        assert result["total_results"] == 50
-        assert result["total_pages"] == 3
-        assert result["provider"] == "TMDB"
-        assert len(result["results"]) == 2
-
-        # Check first result with all fields populated
-        assert result["results"][0]["id"] == "1"
-        assert result["results"][0]["media_type"] == MEDIA_TYPE_FILM
-        assert result["results"][0]["title"] == "Film 1"
-        assert result["results"][0]["date"] == "2024-01-15"
-        assert result["results"][0]["rating"] == 8.0
-        assert result["results"][0]["description"] == "Description 1"
-        assert result["results"][0]["genre_ids"] == [28]
-
-        # Check second result with None values
-        assert result["results"][1]["id"] == "2"
-        assert result["results"][1]["date"] is None
-        assert result["results"][1]["rating"] is None
-        assert result["results"][1]["description"] is None
-        assert result["results"][1]["genre_ids"] == []
+        assert result == expected_film_payload
 
     @pytest.mark.asyncio
     async def test_uses_film_media_type_and_default_parameters(self, mock_media_service, sample_film_media_list):
@@ -131,41 +112,28 @@ class TestFetchFilms:
         await fetch_films(mock_media_service, sort_by="date.asc")
 
     @pytest.mark.asyncio
-    async def test_empty_film_results(self, mock_media_service):
+    async def test_empty_film_results(self, mock_media_service, empty_media_list, expected_empty_payload):
         """Test handling of empty results from service."""
-        empty_list = MediaList(results=[], total_results=0, page=1, total_pages=0)
-        mock_media_service.get_media.return_value = empty_list
+        mock_media_service.get_media.return_value = empty_media_list
 
         result = await fetch_films(mock_media_service)
 
-        assert result["results"] == []
-        assert result["total_results"] == 0
-        assert result["total_pages"] == 0
+        assert result == expected_empty_payload
 
 
 class TestFetchTelevision:
     """Tests for fetch_television orchestration function."""
 
     @pytest.mark.asyncio
-    async def test_returns_formatted_results(self, mock_media_service, sample_tv_media_list):
-        """Test fetch_television returns correctly formatted results."""
+    async def test_returns_formatted_results(
+        self, mock_media_service, sample_tv_media_list, expected_television_payload
+    ):
+        """Test fetch_television formats every field of the service payload."""
         mock_media_service.get_media.return_value = sample_tv_media_list
 
         result = await fetch_television(mock_media_service)
 
-        assert result["page"] == 2
-        assert result["total_results"] == 25
-        assert result["total_pages"] == 5
-        assert result["provider"] == "TMDB"
-        assert len(result["results"]) == 1
-
-        assert result["results"][0]["id"] == "101"
-        assert result["results"][0]["media_type"] == MEDIA_TYPE_TELEVISION
-        assert result["results"][0]["title"] == "TV Show 1"
-        assert result["results"][0]["date"] == "2024-03-20"
-        assert result["results"][0]["rating"] == 9.0
-        assert result["results"][0]["description"] == "TV Description 1"
-        assert result["results"][0]["genre_ids"] == [18, 10765]
+        assert result == expected_television_payload
 
     @pytest.mark.asyncio
     async def test_uses_television_media_type_and_default_parameters(self, mock_media_service, sample_tv_media_list):
@@ -252,13 +220,10 @@ class TestFetchTelevision:
         await fetch_television(mock_media_service, sort_by="popularity.desc")
 
     @pytest.mark.asyncio
-    async def test_empty_television_results(self, mock_media_service):
+    async def test_empty_television_results(self, mock_media_service, empty_media_list, expected_empty_payload):
         """Test handling of empty results from service."""
-        empty_list = MediaList(results=[], total_results=0, page=1, total_pages=0)
-        mock_media_service.get_media.return_value = empty_list
+        mock_media_service.get_media.return_value = empty_media_list
 
         result = await fetch_television(mock_media_service)
 
-        assert result["results"] == []
-        assert result["total_results"] == 0
-        assert result["total_pages"] == 0
+        assert result == expected_empty_payload

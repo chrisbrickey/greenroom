@@ -2,14 +2,17 @@
 
 import httpx
 import pytest
+from datetime import date
 from urllib.parse import quote, urlencode
 from pytest_httpx import HTTPXMock
 
 from greenroom.exceptions import APIConnectionError, APIResponseError
+from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.service import TMDBService
+from greenroom.models.media import Media
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 
-from .conftest import TMDB_BASE_URL, TEST_API_KEY
+from .conftest import TMDB_BASE_URL, TEST_API_KEY, TRUNCATED_MAX_RESULTS, build_oversized_page
 
 # Response body for tests that assert on the outgoing request rather than the results
 EMPTY_DISCOVER_RESPONSE = {
@@ -168,35 +171,51 @@ async def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXM
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
 
-    # Should return 5 media items (all with IDs), not 6
-    assert len(result.results) == 5
+    # IMPORTANT: max_results must be passed explicitly in this test to ensure
+    # that the default value for that field is not the source of truncation/filtering.
+    # If we don't override max_results here and the default value (e.g., DISCOVER_MAX_RESULTS)
+    # happens to be smaller than the set of mocked results, then this test
+    # would pass whether or not a malformed entry was actually filtered out.
+    result = await service.get_media(
+        media_type=MEDIA_TYPE_FILM, max_results=PROVIDER_PAGE_SIZE
+    )
 
-    # Check first item has all data
-    assert result.results[0].title == "Complete Film"
-    assert result.results[0].date.isoformat() == "2024-01-01"
-    assert result.results[0].rating == 7.5
-    assert result.results[0].description == "Full details"
-    assert result.results[0].genre_ids == [28]
+    # Keyed by id rather than position, so reordering the mock above does not
+    # disturb the expectations below. This test is about how each malformed
+    # entry is mapped, not about the order the provider returned them in.
+    by_id = {media.id: media for media in result.results}
 
-    # Check that missing fields are None or empty
-    assert result.results[1].title == "Missing Date"
-    assert result.results[1].date is None
-    assert result.results[1].description is None
+    # The entry with no id is dropped rather than failing the whole page
+    assert set(by_id) == {"1", "2", "3", "4", "5"}
 
-    assert result.results[2].title == ""  # Empty string for missing title
-    assert result.results[2].rating == 6.0
+    # Compared whole, so a field this test forgot to name cannot drift unnoticed
+    assert by_id["1"] == Media(
+        id="1",
+        media_type=MEDIA_TYPE_FILM,
+        title="Complete Film",
+        date=date(2024, 1, 1),
+        rating=7.5,
+        description="Full details",
+        genre_ids=[28],
+    )
 
-    # Check item with only ID
-    assert result.results[3].id == "4"
-    assert result.results[3].title == ""
-    assert result.results[3].genre_ids == []
+    # Absent fields fall back instead of raising: title to "", the rest to
+    # None, and genre_ids to an empty list
+    assert by_id["2"] == Media(
+        id="2", media_type=MEDIA_TYPE_FILM, title="Missing Date", genre_ids=[]
+    )
+    assert by_id["3"] == Media(
+        id="3", media_type=MEDIA_TYPE_FILM, title="", rating=6.0, genre_ids=[]
+    )
+    assert by_id["4"] == Media(
+        id="4", media_type=MEDIA_TYPE_FILM, title="", genre_ids=[]
+    )
 
-    # Check item with invalid date format - date should be None
-    assert result.results[4].id == "5"
-    assert result.results[4].title == "Invalid Date Film"
-    assert result.results[4].date is None
+    # An unparseable date is treated as absent rather than propagated
+    assert by_id["5"] == Media(
+        id="5", media_type=MEDIA_TYPE_FILM, title="Invalid Date Film", genre_ids=[]
+    )
 
 
 @pytest.mark.asyncio
@@ -251,6 +270,48 @@ async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXM
     assert "sort_by=popularity.desc" in str(request.url)
     assert "page=1" in str(request.url)
     assert "include_adult=false" in str(request.url)
+
+
+@pytest.mark.asyncio
+async def test_get_media_limits_results_to_max_results(monkeypatch, httpx_mock: HTTPXMock):
+    """Test get_media truncates the result list to max_results."""
+    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
+
+    returned_count = DISCOVER_MAX_RESULTS + 5
+    httpx_mock.add_response(
+        url=build_discover_url("movie"),
+        json=build_oversized_page(returned_count)
+    )
+
+    service = TMDBService()
+    result = await service.get_media(
+        media_type=MEDIA_TYPE_FILM, max_results=TRUNCATED_MAX_RESULTS
+    )
+
+    assert len(result.results) == TRUNCATED_MAX_RESULTS
+    # total_results still reflects what TMDB reported, not the truncated count
+    assert result.total_results == returned_count
+
+
+@pytest.mark.asyncio
+async def test_get_media_applies_discover_max_results_by_default(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that omitting max_results truncates to the discover default.
+
+    The default is what an agent gets when it does not ask for a count, so a
+    signature that drifted from media_limits would quietly change every
+    unqualified call.
+    """
+    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
+
+    httpx_mock.add_response(
+        url=build_discover_url("movie"),
+        json=build_oversized_page(DISCOVER_MAX_RESULTS + 5)
+    )
+
+    service = TMDBService()
+    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
+
+    assert len(result.results) == DISCOVER_MAX_RESULTS
 
 
 @pytest.mark.asyncio
