@@ -29,6 +29,7 @@ FASTMCP_RESULT_KEY = "result" # the key under which bare values are nested when 
 PROVIDER_NAME = "TMDB"
 TEST_API_KEY = "test_api_key"
 FILM_QUERY = "Test Film"
+TELEVISION_QUERY = "Test Show"
 
 
 # =============================================================================
@@ -158,6 +159,13 @@ SCHEMA_CASES = [
         expected_defaults=SEARCH_DEFAULTS,
     ),
     SchemaCase(
+        tool_name="search_television",
+        server_fixture="discovery_server",
+        expected_parameters=SEARCH_PARAMETERS,
+        expected_required=["query"],
+        expected_defaults=SEARCH_DEFAULTS,
+    ),
+    SchemaCase(
         tool_name="list_genres",
         server_fixture="genre_server",
         expected_parameters=[],
@@ -195,7 +203,7 @@ SCHEMA_CASES = [
 # Tools each registration function is expected to contribute, stated separately
 # from SCHEMA_CASES so that a tool added to neither list is still caught
 REGISTRATION_CASES = [
-    ("discovery_server", {"discover_films", "discover_television", "search_films"}),
+    ("discovery_server", {"discover_films", "discover_television", "search_films", "search_television"}),
     ("genre_server", {"list_genres", "list_genres_simplified", "categorize_genres"}),
     ("agent_server", {"compare_llm_responses"}),
 ]
@@ -376,6 +384,15 @@ TOOL_CASES = [
         expected_provider_params=expected_search_params(FILM_QUERY, "primary_release_year"),
         expected_media_type=MEDIA_TYPE_FILM,
         response_fields=FILM_RESPONSE_FIELDS,
+        forbidden_params=DISCOVERY_ONLY_PARAMS,
+    ),
+    ToolCase(
+        tool_name="search_television",
+        arguments=build_search_arguments(TELEVISION_QUERY),
+        expected_path="/3/search/tv",
+        expected_provider_params=expected_search_params(TELEVISION_QUERY, "first_air_date_year"),
+        expected_media_type=MEDIA_TYPE_TELEVISION,
+        response_fields=TELEVISION_RESPONSE_FIELDS,
         forbidden_params=DISCOVERY_ONLY_PARAMS,
     ),
 ]

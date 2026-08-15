@@ -21,7 +21,7 @@ pytestmark = pytest.mark.external
 # Fixtures
 #------------
 
-# TMDB uses different parameter names for films and TV, so every test runs both
+# TMDB uses different parameter names for films and TV, so every test runs both.
 MEDIA_TYPES = (MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION)
 
 DESCENDING_DIRECTION = "desc"

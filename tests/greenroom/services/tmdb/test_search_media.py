@@ -10,7 +10,7 @@ from pytest_httpx import HTTPXMock
 
 from greenroom.exceptions import APIConnectionError, APIResponseError
 from greenroom.models.media import Media, MediaList
-from greenroom.models.media_types import MEDIA_TYPE_FILM
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import PROVIDER_PAGE_SIZE, SEARCH_MAX_RESULTS
 from greenroom.services.tmdb.service import TMDBService
 
@@ -23,6 +23,7 @@ from .conftest import (
 )
 
 FILM_QUERY = "Test Film"
+TELEVISION_QUERY = "Test Show"
 UNMATCHED_QUERY = "No Such Title"
 
 # Stated separately because tests other than the mapping ones borrow just the title
@@ -41,6 +42,12 @@ FILM_TWO = SampleMedia(
     description="Sample description for the second sample film.",
     rating=7.0,
     genre_ids=[28, 12, 878],
+)
+TELEVISION_ONE = SampleMedia(
+    title="Test Show One",
+    description="Sample description for the sample television show.",
+    rating=8.4,
+    genre_ids=[18, 9648, 878],
 )
 
 
@@ -143,6 +150,54 @@ async def test_search_media_returns_media_list_for_films(monkeypatch, httpx_mock
 
 
 @pytest.mark.asyncio
+async def test_search_media_returns_media_list_for_television(monkeypatch, httpx_mock: HTTPXMock):
+    """Test search_media maps TV name/first_air_date onto the standard fields."""
+    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
+
+    mock_response = {
+        "page": 1,
+        "total_results": 1,
+        "total_pages": 1,
+        "results": [
+            {
+                "id": 701,
+                "name": TELEVISION_ONE.title,
+                "first_air_date": "2022-02-17",
+                "vote_average": TELEVISION_ONE.rating,
+                "overview": TELEVISION_ONE.description,
+                "genre_ids": TELEVISION_ONE.genre_ids
+            }
+        ]
+    }
+
+    httpx_mock.add_response(
+        url=build_search_url("tv", TELEVISION_QUERY),
+        json=mock_response
+    )
+
+    service = TMDBService()
+    result = await service.search_media(media_type=MEDIA_TYPE_TELEVISION, query=TELEVISION_QUERY)
+
+    # Compared whole, so a field this test forgot to name cannot drift unnoticed.
+    assert result == MediaList(
+        page=1,
+        total_results=1,
+        total_pages=1,
+        results=[
+            Media(
+                id="701",
+                media_type=MEDIA_TYPE_TELEVISION,
+                title=TELEVISION_ONE.title,
+                date=date(2022, 2, 17),
+                rating=TELEVISION_ONE.rating,
+                description=TELEVISION_ONE.description,
+                genre_ids=TELEVISION_ONE.genre_ids,
+            ),
+        ],
+    )
+
+
+@pytest.mark.asyncio
 async def test_search_media_sends_query_and_defaults(monkeypatch, httpx_mock: HTTPXMock):
     """Test search_media sends the query verbatim with default params and no discover-only params."""
     monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
@@ -182,6 +237,24 @@ async def test_search_media_uses_film_year_param(monkeypatch, httpx_mock: HTTPXM
     params = httpx_mock.get_requests()[0].url.params
     assert params["primary_release_year"] == "2003"
     assert "first_air_date_year" not in params
+
+
+@pytest.mark.asyncio
+async def test_search_media_uses_television_year_param(monkeypatch, httpx_mock: HTTPXMock):
+    """Test search_media maps year onto first_air_date_year for television."""
+    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
+
+    httpx_mock.add_response(
+        url=build_search_url("tv", TELEVISION_QUERY, first_air_date_year=2022),
+        json=build_empty_response()
+    )
+
+    service = TMDBService()
+    await service.search_media(media_type=MEDIA_TYPE_TELEVISION, query=TELEVISION_QUERY, year=2022)
+
+    params = httpx_mock.get_requests()[0].url.params
+    assert params["first_air_date_year"] == "2022"
+    assert "primary_release_year" not in params
 
 
 @pytest.mark.asyncio

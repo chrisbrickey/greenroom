@@ -8,7 +8,7 @@ from datetime import date
 import pytest
 
 from greenroom.models.media import Media, MediaList
-from greenroom.models.media_types import MEDIA_TYPE_FILM
+from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import PROVIDER_PAGE_SIZE
 from greenroom.services.tmdb.service import TMDBService
 
@@ -20,8 +20,8 @@ pytestmark = pytest.mark.external
 # Fixtures
 #------------
 
-# Every test runs against each media type the search tools support
-MEDIA_TYPES = (MEDIA_TYPE_FILM,)
+# TMDB uses different parameter names for films and TV, so every test runs both.
+MEDIA_TYPES = (MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION)
 
 # A common english word (not a real title) with high probability of returning more than one page of results
 BROAD_MATCH_QUERY = "the"

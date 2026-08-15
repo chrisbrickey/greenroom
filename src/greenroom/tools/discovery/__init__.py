@@ -25,6 +25,7 @@ from greenroom.tools.discovery.discovery_tools import (
 )
 from greenroom.tools.discovery.search_tools import (
     find_films,
+    find_television,
     register_search_tools,
 )
 
@@ -45,4 +46,5 @@ __all__ = [
     "fetch_films",
     "fetch_television",
     "find_films",
+    "find_television",
 ]

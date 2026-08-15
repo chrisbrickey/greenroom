@@ -48,6 +48,7 @@ Below are some example prompts that will trigger the use of multiple MCP tools, 
 | Films | **discover_films** | Retrieves list of films based on selected criteria. Returns metadata for informed responses and optimized categorization. |
 | Films | **search_films** | Looks up films by title. Search can be optionally narrowed by release year. Returns the same metadata shape as discover_films. |
 | Television | **discover_television** | Retrieves list of television shows based on selected criteria. Returns metadata for informed responses and optimized categorization. |
+| Television | **search_television** | Looks up television shows by title. Search can be optionally narrowed by release year (year of first airing). Returns the same metadata shape as discover_television. |
 
 _MCP tools are callable actions, analogous to POST requests, that an agent executes. They are annotated with `@mcp.tool()` in the FastMCP framework._
 
