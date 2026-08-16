@@ -10,7 +10,7 @@ from greenroom.tools.genre_tools import fetch_genres
 
 @pytest.mark.asyncio
 async def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
-    """Use genre ID from genre tools to discover specific films with media discovery tools."""
+    """Use genre ID from genre tools to discover specific films with the discover tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     # Mock list_genres response
@@ -35,7 +35,7 @@ async def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_moc
     assert action_id == 28
 
     # Mock discover response
-    discovery_response = {
+    discover_response = {
         "page": 1,
         "total_results": 50,
         "total_pages": 3,
@@ -46,11 +46,11 @@ async def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_moc
 
     httpx_mock.add_response(
         url=f"https://api.themoviedb.org/3/discover/movie?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres={action_id}",
-        json=discovery_response
+        json=discover_response
     )
 
     # Use genre ID to discover films via service
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
+    result = await service.discover_media(media_type=MEDIA_TYPE_FILM, genre_id=action_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Action Film"
@@ -59,7 +59,7 @@ async def test_discover_films_with_genre_from_list_genres(monkeypatch, httpx_moc
 
 @pytest.mark.asyncio
 async def test_discover_television_with_genre_from_list_genres(monkeypatch, httpx_mock: HTTPXMock):
-    """Use genre ID from genre tools to discover specific tv shows with media discovery tools."""
+    """Use genre ID from genre tools to discover specific tv shows with the discover tools."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     # Mock list_genres response with Drama genre available for both films and TV
@@ -84,7 +84,7 @@ async def test_discover_television_with_genre_from_list_genres(monkeypatch, http
     assert drama_id == 18
 
     # Mock discover response for TV shows
-    discovery_response = {
+    discover_response = {
         "page": 1,
         "total_results": 50,
         "total_pages": 3,
@@ -95,11 +95,11 @@ async def test_discover_television_with_genre_from_list_genres(monkeypatch, http
 
     httpx_mock.add_response(
         url=f"https://api.themoviedb.org/3/discover/tv?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres={drama_id}",
-        json=discovery_response
+        json=discover_response
     )
 
     # Use genre ID to discover television via service
-    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    result = await service.discover_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(result.results) == 1
     assert result.results[0].title == "Drama Show"
@@ -136,7 +136,7 @@ async def test_discover_films_and_television_with_shared_genre(monkeypatch, http
     assert genres["Drama"]["has_tv_shows"] is True
 
     # Mock discover response for films
-    film_discovery_response = {
+    film_discover_response = {
         "page": 1,
         "total_results": 100,
         "total_pages": 5,
@@ -147,11 +147,11 @@ async def test_discover_films_and_television_with_shared_genre(monkeypatch, http
 
     httpx_mock.add_response(
         url=f"https://api.themoviedb.org/3/discover/movie?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres={drama_id}",
-        json=film_discovery_response
+        json=film_discover_response
     )
 
     # Mock discover response for TV shows
-    tv_discovery_response = {
+    tv_discover_response = {
         "page": 1,
         "total_results": 80,
         "total_pages": 4,
@@ -162,11 +162,11 @@ async def test_discover_films_and_television_with_shared_genre(monkeypatch, http
 
     httpx_mock.add_response(
         url=f"https://api.themoviedb.org/3/discover/tv?api_key=test_api_key&sort_by=popularity.desc&page=1&include_adult=false&include_video=false&with_genres={drama_id}",
-        json=tv_discovery_response
+        json=tv_discover_response
     )
 
     # Discover films with the shared genre
-    film_result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
+    film_result = await service.discover_media(media_type=MEDIA_TYPE_FILM, genre_id=drama_id)
 
     assert len(film_result.results) == 1
     assert film_result.results[0].title == "Drama Film"
@@ -174,7 +174,7 @@ async def test_discover_films_and_television_with_shared_genre(monkeypatch, http
     assert drama_id in film_result.results[0].genre_ids
 
     # Discover television with the same shared genre
-    tv_result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
+    tv_result = await service.discover_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=drama_id)
 
     assert len(tv_result.results) == 1
     assert tv_result.results[0].title == "Drama Show"

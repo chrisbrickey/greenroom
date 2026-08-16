@@ -1,17 +1,17 @@
 """Look-up-by-title media tools for the greenroom MCP server.
 
 These tools find a specific title the user named.
-See discovery_tools.py instead for browsing by criteria such as genre or year.
+See discover_tools.py instead for browsing by criteria such as genre or year.
 """
 
 from fastmcp import FastMCP
 
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
-from greenroom.models.responses import DiscoveryResultDict
+from greenroom.models.responses import MediaPageDict
 from greenroom.services.media_limits import SEARCH_MAX_RESULTS
 from greenroom.services.protocols import MediaService
-from greenroom.tools.discovery.formatting import format_media_list
-from greenroom.tools.discovery.validation import validate_search_params
+from greenroom.tools.media.formatting import format_media_list
+from greenroom.tools.media.validation import validate_search_params
 
 
 def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
@@ -33,7 +33,7 @@ def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
         display_language: str | None = None,
         page: int = 1,
         max_results: int = SEARCH_MAX_RESULTS
-    ) -> DiscoveryResultDict:
+    ) -> MediaPageDict:
         """
         Looks up films by title. Use this when the user provides the title of a specific film.
         Use discover_films instead when browsing by criteria like genre or year.
@@ -78,7 +78,7 @@ def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await find_films(service, query, year, display_language, page, max_results)
+        return await lookup_films(service, query, year, display_language, page, max_results)
 
     @mcp.tool()
     async def search_television(
@@ -87,7 +87,7 @@ def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
         display_language: str | None = None,
         page: int = 1,
         max_results: int = SEARCH_MAX_RESULTS
-    ) -> DiscoveryResultDict:
+    ) -> MediaPageDict:
         """
         Looks up television shows by title. Use this when the user provides the title of a specific show.
         Use discover_television instead when browsing by criteria like genre or year.
@@ -132,33 +132,33 @@ def register_search_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await find_television(service, query, year, display_language, page, max_results)
+        return await lookup_television(service, query, year, display_language, page, max_results)
 
 
 # -------------
 # Orchestration
 # -------------
 
-async def find_films(
+async def lookup_films(
     media_service: MediaService,
     query: str,
     year: int | None = None,
     display_language: str | None = None,
     page: int = 1,
     max_results: int = SEARCH_MAX_RESULTS
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
     return await _search_media(
         media_service, MEDIA_TYPE_FILM, query, year, display_language, page, max_results
     )
 
-async def find_television(
+async def lookup_television(
     media_service: MediaService,
     query: str,
     year: int | None = None,
     display_language: str | None = None,
     page: int = 1,
     max_results: int = SEARCH_MAX_RESULTS
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
     return await _search_media(
         media_service, MEDIA_TYPE_TELEVISION, query, year, display_language, page, max_results
     )
@@ -171,7 +171,7 @@ async def _search_media(
     display_language: str | None,
     page: int,
     max_results: int,
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
 
     # Validate parameters
     validate_search_params(

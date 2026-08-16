@@ -47,7 +47,7 @@ class MediaService(Protocol):
     """Protocol defining the unified interface for media services.
 
     Any provider (TMDB, IMDb, OMDb, etc.) must implement this interface to be
-    compatible with the genre and media discovery tools.
+    compatible with the genre and media tools.
     """
 
     async def get_genres(self) -> GenreList:
@@ -62,7 +62,7 @@ class MediaService(Protocol):
         """
         ...
 
-    async def get_media(
+    async def discover_media(
         self,
         media_type: MediaType,
         genre_id: int | None,

@@ -1,4 +1,4 @@
-"""Shared fixtures for the discovery tool-layer tests."""
+"""Shared fixtures for the media tool-layer tests."""
 
 from datetime import date
 from unittest.mock import AsyncMock, Mock
@@ -7,12 +7,12 @@ import pytest
 
 from greenroom.models.media import Media, MediaList
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
-from greenroom.models.responses import DiscoveryResultDict
+from greenroom.models.responses import MediaPageDict
 from greenroom.services.protocols import MediaService
 
 PROVIDER_NAME = "TMDB"
 
-EXPECTED_FILM_PAYLOAD: DiscoveryResultDict = {
+EXPECTED_FILM_PAYLOAD: MediaPageDict = {
     "results": [
         {
             "id": "1",
@@ -39,7 +39,7 @@ EXPECTED_FILM_PAYLOAD: DiscoveryResultDict = {
     "provider": PROVIDER_NAME
 }
 
-EXPECTED_TELEVISION_PAYLOAD: DiscoveryResultDict = {
+EXPECTED_TELEVISION_PAYLOAD: MediaPageDict = {
     "results": [
         {
             "id": "101",
@@ -57,7 +57,7 @@ EXPECTED_TELEVISION_PAYLOAD: DiscoveryResultDict = {
     "provider": PROVIDER_NAME
 }
 
-EXPECTED_EMPTY_PAYLOAD: DiscoveryResultDict = {
+EXPECTED_EMPTY_PAYLOAD: MediaPageDict = {
     "results": [],
     "total_results": 0,
     "page": 1,
@@ -71,7 +71,7 @@ def mock_media_service() -> Mock:
     """Create a mock media service."""
     service = Mock(spec=MediaService)
     service.get_provider_name.return_value = PROVIDER_NAME
-    service.get_media = AsyncMock()
+    service.discover_media = AsyncMock()
     service.search_media = AsyncMock()
     return service
 
@@ -138,18 +138,18 @@ def empty_media_list() -> MediaList:
 
 
 @pytest.fixture
-def expected_film_payload() -> DiscoveryResultDict:
+def expected_film_payload() -> MediaPageDict:
     """The formatted payload that sample_film_media_list should produce."""
     return EXPECTED_FILM_PAYLOAD
 
 
 @pytest.fixture
-def expected_television_payload() -> DiscoveryResultDict:
+def expected_television_payload() -> MediaPageDict:
     """The formatted payload that sample_tv_media_list should produce."""
     return EXPECTED_TELEVISION_PAYLOAD
 
 
 @pytest.fixture
-def expected_empty_payload() -> DiscoveryResultDict:
+def expected_empty_payload() -> MediaPageDict:
     """The formatted payload that empty_media_list should produce."""
     return EXPECTED_EMPTY_PAYLOAD

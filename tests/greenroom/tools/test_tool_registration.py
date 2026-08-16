@@ -18,7 +18,7 @@ from fastmcp.exceptions import ToolError
 
 from greenroom.tools import register_all_tools
 from greenroom.tools.agent_tools import register_agent_tools
-from greenroom.tools.discovery import register_all_discovery_tools
+from greenroom.tools.media import register_media_tools
 from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
@@ -38,12 +38,12 @@ TELEVISION_QUERY = "Test Show"
 
 
 @pytest.fixture
-def discovery_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server with the discovery tools registered."""
+def media_server(monkeypatch) -> FastMCP:
+    """Create a FastMCP server with the media tools registered."""
     monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
 
     mcp = FastMCP("test-server")
-    register_all_discovery_tools(mcp)
+    register_media_tools(mcp)
     return mcp
 
 
@@ -109,10 +109,10 @@ COMPARISON_PARAMETERS = ["prompt", "temperature", "max_tokens"]
 COMPARISON_TEMPERATURE = 0.7
 COMPARISON_MAX_TOKENS = 500
 
-DISCOVERY_PARAMETERS = ["genre_id", "year", "original_language", "sort_by", "page", "max_results"]
+DISCOVER_PARAMETERS = ["genre_id", "year", "original_language", "sort_by", "page", "max_results"]
 SEARCH_PARAMETERS = ["query", "year", "display_language", "page", "max_results"]
 FIRST_PAGE = 1
-DISCOVERY_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
+DISCOVER_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
 SEARCH_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": SEARCH_MAX_RESULTS}
 
 
@@ -139,28 +139,28 @@ class SchemaCase:
 SCHEMA_CASES = [
     SchemaCase(
         tool_name="discover_films",
-        server_fixture="discovery_server",
-        expected_parameters=DISCOVERY_PARAMETERS,
+        server_fixture="media_server",
+        expected_parameters=DISCOVER_PARAMETERS,
         expected_required=[],
-        expected_defaults=DISCOVERY_DEFAULTS,
+        expected_defaults=DISCOVER_DEFAULTS,
     ),
     SchemaCase(
         tool_name="discover_television",
-        server_fixture="discovery_server",
-        expected_parameters=DISCOVERY_PARAMETERS,
+        server_fixture="media_server",
+        expected_parameters=DISCOVER_PARAMETERS,
         expected_required=[],
-        expected_defaults=DISCOVERY_DEFAULTS,
+        expected_defaults=DISCOVER_DEFAULTS,
     ),
     SchemaCase(
         tool_name="search_films",
-        server_fixture="discovery_server",
+        server_fixture="media_server",
         expected_parameters=SEARCH_PARAMETERS,
         expected_required=["query"],
         expected_defaults=SEARCH_DEFAULTS,
     ),
     SchemaCase(
         tool_name="search_television",
-        server_fixture="discovery_server",
+        server_fixture="media_server",
         expected_parameters=SEARCH_PARAMETERS,
         expected_required=["query"],
         expected_defaults=SEARCH_DEFAULTS,
@@ -203,7 +203,7 @@ SCHEMA_CASES = [
 # Tools each registration function is expected to contribute, stated separately
 # from SCHEMA_CASES so that a tool added to neither list is still caught
 REGISTRATION_CASES = [
-    ("discovery_server", {"discover_films", "discover_television", "search_films", "search_television"}),
+    ("media_server", {"discover_films", "discover_television", "search_films", "search_television"}),
     ("genre_server", {"list_genres", "list_genres_simplified", "categorize_genres"}),
     ("agent_server", {"compare_llm_responses"}),
 ]
@@ -277,8 +277,8 @@ REQUESTED_SORT_BY = "vote_average.desc"
 REQUESTED_PAGE = 2
 REQUESTED_MAX_RESULTS = 1
 
-# Parameters the search endpoints must never send, since only discovery supports them
-DISCOVERY_ONLY_PARAMS = ("sort_by", "with_original_language")
+# Parameters the search endpoints must never send, since only the discover tools support them
+DISCOVER_ONLY_PARAMS = ("sort_by", "with_original_language")
 
 # TMDB response field names, which differ by media type
 FILM_RESPONSE_FIELDS = ("title", "release_date")
@@ -307,7 +307,7 @@ class ToolCase:
     forbidden_params: tuple[str, ...] = field(default=())
 
 
-DISCOVERY_ARGUMENTS: dict[str, Any] = {
+DISCOVER_ARGUMENTS: dict[str, Any] = {
     "genre_id": REQUESTED_GENRE_ID,
     "year": REQUESTED_YEAR,
     "original_language": REQUESTED_LANGUAGE,
@@ -316,7 +316,7 @@ DISCOVERY_ARGUMENTS: dict[str, Any] = {
     "max_results": REQUESTED_MAX_RESULTS,
 }
 
-SHARED_DISCOVERY_PARAMS: dict[str, str] = {
+SHARED_DISCOVER_PARAMS: dict[str, str] = {
     "with_genres": str(REQUESTED_GENRE_ID),
     "with_original_language": REQUESTED_LANGUAGE,
     "sort_by": REQUESTED_SORT_BY,
@@ -363,17 +363,17 @@ def expected_search_params(query: str, year_param: str) -> dict[str, str]:
 TOOL_CASES = [
     ToolCase(
         tool_name="discover_films",
-        arguments=DISCOVERY_ARGUMENTS,
+        arguments=DISCOVER_ARGUMENTS,
         expected_path="/3/discover/movie",
-        expected_provider_params={**SHARED_DISCOVERY_PARAMS, "primary_release_year": str(REQUESTED_YEAR)},
+        expected_provider_params={**SHARED_DISCOVER_PARAMS, "primary_release_year": str(REQUESTED_YEAR)},
         expected_media_type=MEDIA_TYPE_FILM,
         response_fields=FILM_RESPONSE_FIELDS,
     ),
     ToolCase(
         tool_name="discover_television",
-        arguments=DISCOVERY_ARGUMENTS,
+        arguments=DISCOVER_ARGUMENTS,
         expected_path="/3/discover/tv",
-        expected_provider_params={**SHARED_DISCOVERY_PARAMS, "first_air_date_year": str(REQUESTED_YEAR)},
+        expected_provider_params={**SHARED_DISCOVER_PARAMS, "first_air_date_year": str(REQUESTED_YEAR)},
         expected_media_type=MEDIA_TYPE_TELEVISION,
         response_fields=TELEVISION_RESPONSE_FIELDS,
     ),
@@ -384,7 +384,7 @@ TOOL_CASES = [
         expected_provider_params=expected_search_params(FILM_QUERY, "primary_release_year"),
         expected_media_type=MEDIA_TYPE_FILM,
         response_fields=FILM_RESPONSE_FIELDS,
-        forbidden_params=DISCOVERY_ONLY_PARAMS,
+        forbidden_params=DISCOVER_ONLY_PARAMS,
     ),
     ToolCase(
         tool_name="search_television",
@@ -393,12 +393,12 @@ TOOL_CASES = [
         expected_provider_params=expected_search_params(TELEVISION_QUERY, "first_air_date_year"),
         expected_media_type=MEDIA_TYPE_TELEVISION,
         response_fields=TELEVISION_RESPONSE_FIELDS,
-        forbidden_params=DISCOVERY_ONLY_PARAMS,
+        forbidden_params=DISCOVER_ONLY_PARAMS,
     ),
 ]
 
 # Split by flow because these flows use different parameters
-DISCOVERY_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "sort_by" in case.arguments]
+DISCOVER_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "sort_by" in case.arguments]
 SEARCH_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "query" in case.arguments]
 
 
@@ -423,18 +423,18 @@ def build_two_result_response(title_field: str, date_field: str) -> dict[str, An
     }
 
 
-def discovery_case_id(case: ToolCase) -> str:
+def tool_case_id(case: ToolCase) -> str:
     """Name each parametrized case after the tool it exercises."""
     return case.tool_name
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("case", TOOL_CASES, ids=discovery_case_id)
-async def test_tool_forwards_arguments_to_provider(discovery_server, httpx_mock, case: ToolCase):
+@pytest.mark.parametrize("case", TOOL_CASES, ids=tool_case_id)
+async def test_tool_forwards_arguments_to_provider(media_server, httpx_mock, case: ToolCase):
     """Test each tool routes its arguments onto the matching provider parameters."""
     httpx_mock.add_response(json=build_two_result_response(*case.response_fields))
 
-    async with Client(discovery_server) as client:
+    async with Client(media_server) as client:
         result = await client.call_tool(case.tool_name, case.arguments)
 
     request = httpx_mock.get_requests()[0]
@@ -633,19 +633,19 @@ BLANK_QUERY = "   "
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("tool_name", DISCOVERY_TOOL_NAMES)
-async def test_tool_rejects_unsupported_sort_order(discovery_server, httpx_mock, tool_name: str):
+@pytest.mark.parametrize("tool_name", DISCOVER_TOOL_NAMES)
+async def test_tool_rejects_unsupported_sort_order(media_server, httpx_mock, tool_name: str):
     """Test that an invalid argument is rejected before any provider call is made."""
-    async with Client(discovery_server) as client:
+    async with Client(media_server) as client:
         with pytest.raises(ToolError, match="sort_by must be one of"):
             await client.call_tool(tool_name, {"sort_by": UNSUPPORTED_SORT_BY})
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("tool_name", SEARCH_TOOL_NAMES)
-async def test_search_tools_reject_blank_query(discovery_server, httpx_mock, tool_name: str):
+async def test_search_tools_reject_blank_query(media_server, httpx_mock, tool_name: str):
     """Test that a blank query is rejected before any provider call is made."""
-    async with Client(discovery_server) as client:
+    async with Client(media_server) as client:
         with pytest.raises(ToolError, match="query must be a non-empty string"):
             await client.call_tool(tool_name, {"query": BLANK_QUERY})
 

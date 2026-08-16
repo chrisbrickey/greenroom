@@ -13,7 +13,7 @@ class MediaResultDict(TypedDict):
     genre_ids: list[int] | None
 
 
-class DiscoveryResultDict(TypedDict):
+class MediaPageDict(TypedDict):
     results: list[MediaResultDict]
     total_results: int
     page: int
