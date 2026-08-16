@@ -10,7 +10,7 @@ from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.models.responses import MediaPageDict
 from greenroom.services.protocols import MediaService
 
-PROVIDER_NAME = "TMDB"
+from ..conftest import PROVIDER_NAME
 
 EXPECTED_FILM_PAYLOAD: MediaPageDict = {
     "results": [

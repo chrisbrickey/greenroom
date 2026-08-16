@@ -10,7 +10,8 @@ env/
 # development workflow
 BACKLOG.md
 
-# agent platforms
+# agentic platforms
+AGENTS.md
 .mcp.json
 .claude/
 .codex/
