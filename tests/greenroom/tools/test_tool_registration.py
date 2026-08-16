@@ -3,7 +3,7 @@
 These tests cover only the tool registration layer: method names of the actual FastMCP
 tools, their input parameter schemas, and the arguments that each tool forwards to its delegates.
 
-The delegate methods, which can be called directly in tests without spinning up an MCP server,
+The orchestration methods, which can be called directly in tests without spinning up an MCP server,
 contain the domain logic for each tool and those methods are comprehensively tested elsewhere.
 """
 
@@ -12,93 +12,35 @@ import re
 import pytest
 from dataclasses import dataclass, field
 from typing import Any
-from fastmcp import Client, FastMCP
-from fastmcp.client.sampling import SamplingMessage, SamplingParams
+from fastmcp import Client
 from fastmcp.exceptions import ToolError
 
-from greenroom.tools import register_all_tools
-from greenroom.tools.agent_tools import register_agent_tools
-from greenroom.tools.media import register_media_tools
-from greenroom.tools.genre_tools import register_genre_tools
 from greenroom.config import Mood
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import DISCOVER_MAX_RESULTS, SEARCH_MAX_RESULTS
 
+from .conftest import (
+    EXPECTED_GENRE_PROPERTIES,
+    FILM_DISCOVER_PATH,
+    FILM_GENRE_PATH,
+    FILM_RESPONSE_FIELDS,
+    FILM_SEARCH_PATH,
+    FIRST_PAGE,
+    PROVIDER_NAME,
+    SHARED_GENRE,
+    TELEVISION_DISCOVER_PATH,
+    TELEVISION_GENRE_PATH,
+    TELEVISION_RESPONSE_FIELDS,
+    TELEVISION_SEARCH_PATH,
+    SamplingRecorder,
+    build_media_response,
+    sampled_prompt,
+)
+
 
 FASTMCP_RESULT_KEY = "result" # the key under which bare values are nested when using FastMCP
-PROVIDER_NAME = "TMDB"
-TEST_API_KEY = "test_api_key"
 FILM_QUERY = "Test Film"
 TELEVISION_QUERY = "Test Show"
-
-
-# =============================================================================
-# Servers, one per registration function
-# =============================================================================
-
-
-@pytest.fixture
-def media_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server with the media tools registered."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_media_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def genre_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server with the genre tools registered."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_genre_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def agent_server() -> FastMCP:
-    """Create a FastMCP server with the agent comparison tools registered."""
-    mcp = FastMCP("test-server")
-    register_agent_tools(mcp)
-    return mcp
-
-
-@pytest.fixture
-def complete_server(monkeypatch) -> FastMCP:
-    """Create a FastMCP server carrying every tool the project ships."""
-    monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
-
-    mcp = FastMCP("test-server")
-    register_all_tools(mcp)
-    return mcp
-
-
-@dataclass
-class SamplingRecorder:
-    """Client-side sampling handler that records requests and returns a canned reply.
-
-    Attributes:
-        reply: Text handed back to the tool for every sampling request
-        requests: Sampling requests received, in the order the tool made them
-    """
-    reply: str
-    requests: list[SamplingParams] = field(default_factory=list)
-
-    async def __call__(
-        self,
-        messages: list[SamplingMessage],
-        params: SamplingParams,
-        context: object
-    ) -> str:
-        self.requests.append(params)
-        return self.reply
-
-
-def sampled_prompt(params: SamplingParams) -> str:
-    """Return the text of the first message in a recorded sampling request."""
-    return params.messages[0].content.text
 
 
 # =============================================================================
@@ -111,7 +53,6 @@ COMPARISON_MAX_TOKENS = 500
 
 DISCOVER_PARAMETERS = ["genre_id", "year", "original_language", "sort_by", "page", "max_results"]
 SEARCH_PARAMETERS = ["query", "year", "display_language", "page", "max_results"]
-FIRST_PAGE = 1
 DISCOVER_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": DISCOVER_MAX_RESULTS}
 SEARCH_DEFAULTS: dict[str, Any] = {"page": FIRST_PAGE, "max_results": SEARCH_MAX_RESULTS}
 
@@ -280,10 +221,6 @@ REQUESTED_MAX_RESULTS = 1
 # Parameters the search endpoints must never send, since only the discover tools support them
 DISCOVER_ONLY_PARAMS = ("sort_by", "with_original_language")
 
-# TMDB response field names, which differ by media type
-FILM_RESPONSE_FIELDS = ("title", "release_date")
-TELEVISION_RESPONSE_FIELDS = ("name", "first_air_date")
-
 
 @dataclass(frozen=True)
 class ToolCase:
@@ -364,7 +301,7 @@ TOOL_CASES = [
     ToolCase(
         tool_name="discover_films",
         arguments=DISCOVER_ARGUMENTS,
-        expected_path="/3/discover/movie",
+        expected_path=FILM_DISCOVER_PATH,
         expected_provider_params={**SHARED_DISCOVER_PARAMS, "primary_release_year": str(REQUESTED_YEAR)},
         expected_media_type=MEDIA_TYPE_FILM,
         response_fields=FILM_RESPONSE_FIELDS,
@@ -372,7 +309,7 @@ TOOL_CASES = [
     ToolCase(
         tool_name="discover_television",
         arguments=DISCOVER_ARGUMENTS,
-        expected_path="/3/discover/tv",
+        expected_path=TELEVISION_DISCOVER_PATH,
         expected_provider_params={**SHARED_DISCOVER_PARAMS, "first_air_date_year": str(REQUESTED_YEAR)},
         expected_media_type=MEDIA_TYPE_TELEVISION,
         response_fields=TELEVISION_RESPONSE_FIELDS,
@@ -380,7 +317,7 @@ TOOL_CASES = [
     ToolCase(
         tool_name="search_films",
         arguments=build_search_arguments(FILM_QUERY),
-        expected_path="/3/search/movie",
+        expected_path=FILM_SEARCH_PATH,
         expected_provider_params=expected_search_params(FILM_QUERY, "primary_release_year"),
         expected_media_type=MEDIA_TYPE_FILM,
         response_fields=FILM_RESPONSE_FIELDS,
@@ -389,7 +326,7 @@ TOOL_CASES = [
     ToolCase(
         tool_name="search_television",
         arguments=build_search_arguments(TELEVISION_QUERY),
-        expected_path="/3/search/tv",
+        expected_path=TELEVISION_SEARCH_PATH,
         expected_provider_params=expected_search_params(TELEVISION_QUERY, "first_air_date_year"),
         expected_media_type=MEDIA_TYPE_TELEVISION,
         response_fields=TELEVISION_RESPONSE_FIELDS,
@@ -402,25 +339,8 @@ DISCOVER_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "sort_by" in cas
 SEARCH_TOOL_NAMES = [case.tool_name for case in TOOL_CASES if "query" in case.arguments]
 
 
-def build_two_result_response(title_field: str, date_field: str) -> dict[str, Any]:
-    """Build a provider response with two results, so max_results truncation is observable.
-
-    Args:
-        title_field: Provider title field name ("title" or "name")
-        date_field: Provider date field name ("release_date" or "first_air_date")
-
-    Returns:
-        Dictionary shaped like a TMDB content response
-    """
-    return {
-        "page": REQUESTED_PAGE,
-        "total_results": 2,
-        "total_pages": 1,
-        "results": [
-            {"id": 601, title_field: "Test Title One", date_field: "2001-03-30", "vote_average": 8.2, "genre_ids": [REQUESTED_GENRE_ID]},
-            {"id": 602, title_field: "Test Title Two", date_field: "2001-05-15", "vote_average": 7.0, "genre_ids": [REQUESTED_GENRE_ID]},
-        ]
-    }
+# Two results, so that truncation down to REQUESTED_MAX_RESULTS is observable
+RESPONSE_RESULT_COUNT = 2
 
 
 def tool_case_id(case: ToolCase) -> str:
@@ -432,7 +352,12 @@ def tool_case_id(case: ToolCase) -> str:
 @pytest.mark.parametrize("case", TOOL_CASES, ids=tool_case_id)
 async def test_tool_forwards_arguments_to_provider(media_server, httpx_mock, case: ToolCase):
     """Test each tool routes its arguments onto the matching provider parameters."""
-    httpx_mock.add_response(json=build_two_result_response(*case.response_fields))
+    httpx_mock.add_response(json=build_media_response(
+        *case.response_fields,
+        genre_ids=[REQUESTED_GENRE_ID],
+        count=RESPONSE_RESULT_COUNT,
+        page=REQUESTED_PAGE
+    ))
 
     async with Client(media_server) as client:
         result = await client.call_tool(case.tool_name, case.arguments)
@@ -457,48 +382,10 @@ async def test_tool_forwards_arguments_to_provider(media_server, httpx_mock, cas
 # Routing through the registered genre tools
 # =============================================================================
 
-FILM_GENRE_LIST_URL = re.compile(r".*/genre/movie/list.*")
-TELEVISION_GENRE_LIST_URL = re.compile(r".*/genre/tv/list.*")
-
-FILM_ONLY_GENRE = "Sample Film Genre"
-SHARED_GENRE = "Sample Shared Genre"
-TELEVISION_ONLY_GENRE = "Sample Television Genre"
-
-FILM_ONLY_GENRE_ID = 701
-SHARED_GENRE_ID = 702
-TELEVISION_ONLY_GENRE_ID = 703
-
-FILM_GENRE_RESPONSE: dict[str, Any] = {
-    "genres": [
-        {"id": FILM_ONLY_GENRE_ID, "name": FILM_ONLY_GENRE},
-        {"id": SHARED_GENRE_ID, "name": SHARED_GENRE},
-    ]
-}
-
-TELEVISION_GENRE_RESPONSE: dict[str, Any] = {
-    "genres": [
-        {"id": SHARED_GENRE_ID, "name": SHARED_GENRE},
-        {"id": TELEVISION_ONLY_GENRE_ID, "name": TELEVISION_ONLY_GENRE},
-    ]
-}
-
-EXPECTED_GENRE_PROPERTIES: dict[str, dict[str, Any]] = {
-    FILM_ONLY_GENRE: {"id": FILM_ONLY_GENRE_ID, "has_films": True, "has_tv_shows": False},
-    SHARED_GENRE: {"id": SHARED_GENRE_ID, "has_films": True, "has_tv_shows": True},
-    TELEVISION_ONLY_GENRE: {"id": TELEVISION_ONLY_GENRE_ID, "has_films": False, "has_tv_shows": True},
-}
-
 # None of the test genres appear in the hardcoded mood map, so every one of them
 # takes the sampling path and the Context wiring stays observable
 SAMPLED_MOOD = Mood.DARK.value
 SIMPLIFIED_GENRE_REPLY = "sample-genre-one, sample-genre-two"
-
-
-@pytest.fixture
-def genre_endpoints(httpx_mock) -> None:
-    """Answer both provider genre endpoints with distinguishable payloads."""
-    httpx_mock.add_response(url=FILM_GENRE_LIST_URL, json=FILM_GENRE_RESPONSE)
-    httpx_mock.add_response(url=TELEVISION_GENRE_LIST_URL, json=TELEVISION_GENRE_RESPONSE)
 
 
 @pytest.mark.asyncio
@@ -508,7 +395,7 @@ async def test_list_genres_returns_combined_provider_genres(genre_server, genre_
         result = await client.call_tool("list_genres", {})
 
     requested_paths = {request.url.path for request in httpx_mock.get_requests()}
-    assert requested_paths == {"/3/genre/movie/list", "/3/genre/tv/list"}
+    assert requested_paths == {FILM_GENRE_PATH, TELEVISION_GENRE_PATH}
 
     assert result.structured_content == EXPECTED_GENRE_PROPERTIES
 
