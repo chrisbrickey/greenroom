@@ -7,15 +7,15 @@ See search_tools for looking up a specific title the user named.
 from fastmcp import FastMCP
 
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION, MediaType
-from greenroom.models.responses import DiscoveryResultDict
+from greenroom.models.responses import MediaPageDict
 from greenroom.services.media_limits import DISCOVER_MAX_RESULTS
 from greenroom.services.protocols import MediaService
-from greenroom.tools.discovery.formatting import format_media_list
-from greenroom.tools.discovery.validation import validate_discovery_params
+from greenroom.tools.media.formatting import format_media_list
+from greenroom.tools.media.validation import validate_discover_params
 
 
-def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
-    """Register discovery tools with the MCP server.
+def register_discover_tools(mcp: FastMCP, service: MediaService) -> None:
+    """Register the browse-by-criteria media tools with the MCP server.
 
     Args:
         mcp: Server to register the tools with
@@ -34,7 +34,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         sort_by: str | None = None,
         page: int = 1,
         max_results: int = DISCOVER_MAX_RESULTS
-    ) -> DiscoveryResultDict:
+    ) -> MediaPageDict:
         """
         Retrieve a list of films based on optional filters like genre, release year,
         original language, and sorting preferences. For now, defaults to TMDB service.
@@ -78,7 +78,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await fetch_films(service, genre_id, year, original_language, sort_by, page, max_results)
+        return await browse_films(service, genre_id, year, original_language, sort_by, page, max_results)
 
     @mcp.tool()
     async def discover_television(
@@ -88,7 +88,7 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         sort_by: str | None = None,
         page: int = 1,
         max_results: int = DISCOVER_MAX_RESULTS
-    ) -> DiscoveryResultDict:
+    ) -> MediaPageDict:
         """
         Retrieve a list of television shows based on optional filters like genre, first air year,
         original language, and sorting preferences. For now, defaults to TMDB service.
@@ -132,13 +132,13 @@ def register_discovery_tools(mcp: FastMCP, service: MediaService) -> None:
         """
 
         # Delegate to public orchestration method to enable unit testing without FastMCP server setup
-        return await fetch_television(service, genre_id, year, original_language, sort_by, page, max_results)
+        return await browse_television(service, genre_id, year, original_language, sort_by, page, max_results)
 
 # -------------
 # Orchestration
 # -------------
 
-async def fetch_films(
+async def browse_films(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
@@ -146,12 +146,12 @@ async def fetch_films(
     sort_by: str | None = None,
     page: int = 1,
     max_results: int = DISCOVER_MAX_RESULTS,
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
     return await _discover_media(
         media_service, MEDIA_TYPE_FILM, genre_id, year, original_language, sort_by, page, max_results
     )
 
-async def fetch_television(
+async def browse_television(
     media_service: MediaService,
     genre_id: int | None = None,
     year: int | None = None,
@@ -159,7 +159,7 @@ async def fetch_television(
     sort_by: str | None = None,
     page: int = 1,
     max_results: int = DISCOVER_MAX_RESULTS
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
     return await _discover_media(
         media_service, MEDIA_TYPE_TELEVISION, genre_id, year, original_language, sort_by, page, max_results
     )
@@ -173,10 +173,10 @@ async def _discover_media(
     sort_by: str | None,
     page: int,
     max_results: int,
-) -> DiscoveryResultDict:
+) -> MediaPageDict:
 
     # Validate parameters
-    validate_discovery_params(
+    validate_discover_params(
         year=year,
         page=page,
         max_results=max_results,
@@ -185,7 +185,7 @@ async def _discover_media(
     )
 
     # Call service
-    media_list = await media_service.get_media(
+    media_list = await media_service.discover_media(
         media_type=media_type,
         genre_id=genre_id,
         year=year,

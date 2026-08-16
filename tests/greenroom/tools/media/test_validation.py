@@ -1,4 +1,4 @@
-"""Tests for the shared parameter validation in discovery/validation.py.
+"""Tests for the shared parameter validation in media/validation.py.
 
 These exercise validation methods directly: no provider, no network, no MCP server.
 """
@@ -6,9 +6,9 @@ These exercise validation methods directly: no provider, no network, no MCP serv
 import pytest
 
 from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN
-from greenroom.tools.discovery.validation import (
+from greenroom.tools.media.validation import (
     VALID_SORT_OPTIONS,
-    validate_discovery_params,
+    validate_discover_params,
     validate_search_params,
 )
 
@@ -36,7 +36,7 @@ SAMPLE_QUERY = "sample-title"
 MALFORMED_LANGUAGE_CODES = ["", "e", "eng", "english", "e1", "12", "e-"]
 
 # One wholly valid call per flow, so each test can override the single field it exercises.
-VALID_DISCOVERY_PARAMS = {
+VALID_DISCOVER_PARAMS = {
     "year": 2024,
     "page": 1,
     "max_results": MAX_RESULTS_MAX,
@@ -56,9 +56,9 @@ VALID_SEARCH_PARAMS = {
 # Helpers
 # --------------
 
-def discovery_params(**overrides):
-    """Build a valid discovery parameter set with the given fields replaced."""
-    return {**VALID_DISCOVERY_PARAMS, **overrides}
+def discover_params(**overrides):
+    """Build a valid discover parameter set with the given fields replaced."""
+    return {**VALID_DISCOVER_PARAMS, **overrides}
 
 
 def search_params(**overrides):
@@ -67,85 +67,85 @@ def search_params(**overrides):
 
 
 # -------------------------
-# Tests for discovery flow
+# Tests for discover flow
 # -------------------------
 
-def test_accepts_fully_populated_valid_discovery_params():
+def test_accepts_fully_populated_valid_discover_params():
     """Every filter supplied and valid is accepted."""
-    validate_discovery_params(**VALID_DISCOVERY_PARAMS)
+    validate_discover_params(**VALID_DISCOVER_PARAMS)
 
 
-def test_accepts_omitted_optional_discovery_filters():
+def test_accepts_omitted_optional_discover_filters():
     """The optional filters are all independently skippable."""
-    validate_discovery_params(**discovery_params(year=None, original_language=None, sort_by=None))
+    validate_discover_params(**discover_params(year=None, original_language=None, sort_by=None))
 
 
 @pytest.mark.parametrize("year", [BELOW_MIN_YEAR, 0, -1])
-def test_rejects_discovery_year_before_catalog_start(year):
+def test_rejects_discover_year_before_catalog_start(year):
     """Years earlier than the catalog floor are rejected."""
     with pytest.raises(ValueError, match=YEAR_MESSAGE):
-        validate_discovery_params(**discovery_params(year=year))
+        validate_discover_params(**discover_params(year=year))
 
 
 @pytest.mark.parametrize("year", [MIN_YEAR, 2024, None])
-def test_accepts_discovery_year_at_or_after_catalog_start(year):
+def test_accepts_discover_year_at_or_after_catalog_start(year):
     """The floor itself is accepted, as is omitting the filter."""
-    validate_discovery_params(**discovery_params(year=year))
+    validate_discover_params(**discover_params(year=year))
 
 
 @pytest.mark.parametrize("page", [0, -1, -100])
-def test_rejects_non_positive_discovery_page(page):
+def test_rejects_non_positive_discover_page(page):
     """Pagination is 1-indexed, so zero and negatives are rejected."""
     with pytest.raises(ValueError, match=PAGE_MESSAGE):
-        validate_discovery_params(**discovery_params(page=page))
+        validate_discover_params(**discover_params(page=page))
 
 
 @pytest.mark.parametrize("page", [MIN_PAGE, 2, 500])
-def test_accepts_positive_discovery_page(page):
+def test_accepts_positive_discover_page(page):
     """The first page and any page beyond it are accepted."""
-    validate_discovery_params(**discovery_params(page=page))
+    validate_discover_params(**discover_params(page=page))
 
 
 @pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN, MAX_RESULTS_MAX])
-def test_accepts_discovery_max_results_at_the_bounds(max_results: int) -> None:
+def test_accepts_discover_max_results_at_the_bounds(max_results: int) -> None:
     """Both bounds are inclusive, so every count between them is accepted too."""
-    validate_discovery_params(**discovery_params(max_results=max_results))
+    validate_discover_params(**discover_params(max_results=max_results))
 
 
 @pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN - 1, MAX_RESULTS_MAX + 1])
-def test_rejects_discovery_max_results_outside_the_bounds(max_results: int) -> None:
+def test_rejects_discover_max_results_outside_the_bounds(max_results: int) -> None:
     """One step past either bound is rejected."""
     with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-        validate_discovery_params(**discovery_params(max_results=max_results))
+        validate_discover_params(**discover_params(max_results=max_results))
 
 
 @pytest.mark.parametrize("original_language", ["en", "es", "fr", None])
 def test_accepts_valid_original_language_code(original_language):
     """Two-letter alphabetic codes are accepted, as is omitting the filter."""
-    validate_discovery_params(**discovery_params(original_language=original_language))
+    validate_discover_params(**discover_params(original_language=original_language))
 
 
 def test_accepts_uppercase_original_language_code():
     """Case is not currently enforced on language codes."""
-    validate_discovery_params(**discovery_params(original_language="EN"))
+    validate_discover_params(**discover_params(original_language="EN"))
 
 
 @pytest.mark.parametrize("original_language", MALFORMED_LANGUAGE_CODES)
 def test_rejects_malformed_original_language_code(original_language):
     """Codes of the wrong length or with non-alphabetic characters are rejected."""
     with pytest.raises(ValueError, match=ORIGINAL_LANGUAGE_MESSAGE):
-        validate_discovery_params(**discovery_params(original_language=original_language))
+        validate_discover_params(**discover_params(original_language=original_language))
 
 
 @pytest.mark.parametrize("sort_by", VALID_SORT_OPTIONS)
 def test_accepts_every_supported_sort_option(sort_by):
     """Every option the tools advertise is accepted by the check that guards them."""
-    validate_discovery_params(**discovery_params(sort_by=sort_by))
+    validate_discover_params(**discover_params(sort_by=sort_by))
 
 
 def test_accepts_omitted_sort_by():
     """Omitting the sort order is accepted; the provider supplies a default."""
-    validate_discovery_params(**discovery_params(sort_by=None))
+    validate_discover_params(**discover_params(sort_by=None))
 
 
 @pytest.mark.parametrize(
@@ -155,7 +155,7 @@ def test_accepts_omitted_sort_by():
 def test_rejects_unsupported_sort_option(sort_by):
     """Sort orders outside the supported vocabulary are rejected."""
     with pytest.raises(ValueError, match=SORT_BY_MESSAGE):
-        validate_discovery_params(**discovery_params(sort_by=sort_by))
+        validate_discover_params(**discover_params(sort_by=sort_by))
 
 
 # ----------------------
@@ -188,18 +188,18 @@ def test_rejects_malformed_display_language(display_language):
 
 @pytest.mark.parametrize("max_results", [MAX_RESULTS_MIN - 1, MAX_RESULTS_MAX + 1])
 def test_rejects_search_max_results_outside_the_bounds(max_results: int) -> None:
-    """The search flow enforces the same result-count bounds as discovery."""
+    """The search flow enforces the same result-count bounds as the discover flow."""
     with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
         validate_search_params(**search_params(max_results=max_results))
 
 
 def test_rejects_search_year_before_catalog_start():
-    """The search flow enforces the same catalog floor as discovery."""
+    """The search flow enforces the same catalog floor as the discover flow."""
     with pytest.raises(ValueError, match=YEAR_MESSAGE):
         validate_search_params(**search_params(year=BELOW_MIN_YEAR))
 
 
 def test_rejects_non_positive_search_page():
-    """The search flow enforces the same 1-indexed pagination as discovery."""
+    """The search flow enforces the same 1-indexed pagination as the discover flow."""
     with pytest.raises(ValueError, match=PAGE_MESSAGE):
         validate_search_params(**search_params(page=0))

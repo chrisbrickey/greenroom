@@ -8,7 +8,7 @@ that the tools grow to cover.
 from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN
 
 
-# Sort orders the discovery tools accept. These are provider-agnostic: the
+# Sort orders the discover tools accept. These are provider-agnostic: the
 # service translates them into the vocabulary of whichever provider it wraps.
 VALID_SORT_OPTIONS = (
     "popularity.desc", "popularity.asc",
@@ -21,7 +21,7 @@ MIN_YEAR = 1900
 MIN_PAGE = 1
 LANGUAGE_CODE_LENGTH = 2
 
-def validate_discovery_params(
+def validate_discover_params(
     *,
     year: int | None,
     page: int,
@@ -29,7 +29,7 @@ def validate_discovery_params(
     original_language: str | None,
     sort_by: str | None
 ) -> None:
-    """Validate the parameters accepted by the discovery tools.
+    """Validate the parameters accepted by the discover tools.
 
     Raises:
         ValueError: If any parameter is invalid

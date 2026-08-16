@@ -4,11 +4,11 @@ These methods construct the payloads that will be returned from the tools to an 
 """
 
 from greenroom.models.media import MediaList
-from greenroom.models.responses import DiscoveryResultDict
+from greenroom.models.responses import MediaPageDict
 from greenroom.services.protocols import MediaService
 
 
-def format_media_list(media_list: MediaList, media_service: MediaService) -> DiscoveryResultDict:
+def format_media_list(media_list: MediaList, media_service: MediaService) -> MediaPageDict:
     """Format MediaList for agent consumption.
 
     Args:

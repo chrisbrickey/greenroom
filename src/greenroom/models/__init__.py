@@ -13,7 +13,7 @@ from greenroom.models.media_types import (
 )
 from greenroom.models.responses import (
     MediaResultDict,
-    DiscoveryResultDict,
+    MediaPageDict,
     GenrePropertiesDict,
     LLMResponseEntryDict,
     LLMComparisonResultDict,
@@ -32,7 +32,7 @@ __all__ = [
     "MEDIA_TYPE_MUSIC",
     "MEDIA_TYPE_GAME",
     "MediaResultDict",
-    "DiscoveryResultDict",
+    "MediaPageDict",
     "GenrePropertiesDict",
     "LLMResponseEntryDict",
     "LLMComparisonResultDict",

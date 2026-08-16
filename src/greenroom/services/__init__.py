@@ -1,4 +1,4 @@
-"""Service layer for media discovery from various providers."""
+"""Service layer for media retrieval from various providers."""
 
 from greenroom.services.protocols import MediaService
 

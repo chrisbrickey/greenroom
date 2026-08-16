@@ -46,7 +46,7 @@ class TMDBService:
     # Retrieve media
     # =============================================================================
 
-    async def get_media(
+    async def discover_media(
         self,
         media_type: MediaType,
         genre_id: int | None = None,

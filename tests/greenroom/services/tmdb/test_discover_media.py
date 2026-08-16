@@ -1,4 +1,4 @@
-"""Tests for TMDBService.get_media()."""
+"""Tests for TMDBService.discover_media()."""
 
 import httpx
 import pytest
@@ -81,8 +81,8 @@ def build_discover_url(endpoint: str, **extra_params: object) -> str:
 
 
 @pytest.mark.asyncio
-async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMock):
-    """Test get_media returns properly formatted MediaList for films."""
+async def test_discover_media_returns_media_list_for_films(monkeypatch, httpx_mock: HTTPXMock):
+    """Test discover_media returns properly formatted MediaList for films."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     mock_response = {
@@ -117,7 +117,7 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=2024, page=1)
+    result = await service.discover_media(media_type=MEDIA_TYPE_FILM, genre_id=18, year=2024, page=1)
 
     # Compared whole, so a field this test forgot to name cannot drift unnoticed.
     # This also pins down that provider-only fields (poster_path, popularity)
@@ -150,8 +150,8 @@ async def test_get_media_returns_media_list_for_films(monkeypatch, httpx_mock: H
 
 
 @pytest.mark.asyncio
-async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mock: HTTPXMock):
-    """Test get_media returns properly formatted MediaList for television shows."""
+async def test_discover_media_returns_media_list_for_television(monkeypatch, httpx_mock: HTTPXMock):
+    """Test discover_media returns properly formatted MediaList for television shows."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     mock_response = {
@@ -184,7 +184,7 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2024, page=1)
+    result = await service.discover_media(media_type=MEDIA_TYPE_TELEVISION, genre_id=18, year=2024, page=1)
 
     # Compared whole, so a field this test forgot to name cannot drift unnoticed.
     # TMDB names the television title and date fields differently from films
@@ -217,7 +217,7 @@ async def test_get_media_returns_media_list_for_television(monkeypatch, httpx_mo
 
 
 @pytest.mark.asyncio
-async def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXMock):
     """Test that media with missing optional fields are handled gracefully."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -247,7 +247,7 @@ async def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXM
     # If we don't override max_results here and the default value (e.g., DISCOVER_MAX_RESULTS)
     # happens to be smaller than the set of mocked results, then this test
     # would pass whether or not a malformed entry was actually filtered out.
-    result = await service.get_media(
+    result = await service.discover_media(
         media_type=MEDIA_TYPE_FILM, max_results=PROVIDER_PAGE_SIZE
     )
 
@@ -289,8 +289,8 @@ async def test_get_media_handles_incomplete_data(monkeypatch, httpx_mock: HTTPXM
 
 
 @pytest.mark.asyncio
-async def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
-    """Test get_media handles empty results gracefully."""
+async def test_discover_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMock):
+    """Test discover_media handles empty results gracefully."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     mock_response = {
@@ -306,7 +306,7 @@ async def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMoc
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
+    result = await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     assert result.results == []
     assert result.total_results == 0
@@ -315,8 +315,8 @@ async def test_get_media_handles_empty_results(monkeypatch, httpx_mock: HTTPXMoc
 
 
 @pytest.mark.asyncio
-async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
-    """Test that get_media applies correct default parameters."""
+async def test_discover_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXMock):
+    """Test that discover_media applies correct default parameters."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     mock_response = {
@@ -332,7 +332,7 @@ async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXM
     )
 
     service = TMDBService()
-    await service.get_media(media_type=MEDIA_TYPE_FILM)
+    await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     # Verify the mock was called with correct default URL
     assert len(httpx_mock.get_requests()) == 1
@@ -343,8 +343,8 @@ async def test_get_media_uses_default_parameters(monkeypatch, httpx_mock: HTTPXM
 
 
 @pytest.mark.asyncio
-async def test_get_media_limits_results_to_max_results(monkeypatch, httpx_mock: HTTPXMock):
-    """Test get_media truncates the result list to max_results."""
+async def test_discover_media_limits_results_to_max_results(monkeypatch, httpx_mock: HTTPXMock):
+    """Test discover_media truncates the result list to max_results."""
     monkeypatch.setenv("TMDB_API_KEY", TEST_API_KEY)
 
     returned_count = DISCOVER_MAX_RESULTS + 5
@@ -354,7 +354,7 @@ async def test_get_media_limits_results_to_max_results(monkeypatch, httpx_mock: 
     )
 
     service = TMDBService()
-    result = await service.get_media(
+    result = await service.discover_media(
         media_type=MEDIA_TYPE_FILM, max_results=TRUNCATED_MAX_RESULTS
     )
 
@@ -364,7 +364,7 @@ async def test_get_media_limits_results_to_max_results(monkeypatch, httpx_mock: 
 
 
 @pytest.mark.asyncio
-async def test_get_media_applies_discover_max_results_by_default(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_applies_discover_max_results_by_default(monkeypatch, httpx_mock: HTTPXMock):
     """Test that omitting max_results truncates to the discover default.
 
     The default is what an agent gets when it does not ask for a count, so a
@@ -379,7 +379,7 @@ async def test_get_media_applies_discover_max_results_by_default(monkeypatch, ht
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM)
+    result = await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     assert len(result.results) == DISCOVER_MAX_RESULTS
 
@@ -392,7 +392,7 @@ async def test_get_media_applies_discover_max_results_by_default(monkeypatch, ht
         (MEDIA_TYPE_TELEVISION, "tv"),
     ]
 )
-async def test_get_media_requests_the_page_it_was_given(
+async def test_discover_media_requests_the_page_it_was_given(
     monkeypatch,
     httpx_mock: HTTPXMock,
     media_type,
@@ -411,14 +411,14 @@ async def test_get_media_requests_the_page_it_was_given(
     )
 
     service = TMDBService()
-    await service.get_media(media_type=media_type, page=REQUESTED_PAGE)
+    await service.discover_media(media_type=media_type, page=REQUESTED_PAGE)
 
     request = httpx_mock.get_requests()[0]
     assert f"page={REQUESTED_PAGE}" in str(request.url)
 
 
 @pytest.mark.asyncio
-async def test_get_media_filters_by_original_language(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_filters_by_original_language(monkeypatch, httpx_mock: HTTPXMock):
     """Test original_language parameter filters media correctly."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -437,7 +437,7 @@ async def test_get_media_filters_by_original_language(monkeypatch, httpx_mock: H
     )
 
     service = TMDBService()
-    result = await service.get_media(media_type=MEDIA_TYPE_FILM, original_language="es")
+    result = await service.discover_media(media_type=MEDIA_TYPE_FILM, original_language="es")
 
     assert len(result.results) == 1
     assert result.results[0].title == "Spanish Film"
@@ -457,7 +457,7 @@ async def test_get_media_filters_by_original_language(monkeypatch, httpx_mock: H
         (MEDIA_TYPE_TELEVISION, "date.asc", "first_air_date.asc"),
     ]
 )
-async def test_get_media_translates_date_sort_to_provider_field(
+async def test_discover_media_translates_date_sort_to_provider_field(
     monkeypatch,
     httpx_mock: HTTPXMock,
     media_type: str,
@@ -474,7 +474,7 @@ async def test_get_media_translates_date_sort_to_provider_field(
     httpx_mock.add_response(json=EMPTY_DISCOVER_RESPONSE)
 
     service = TMDBService()
-    await service.get_media(media_type=media_type, sort_by=requested_sort)
+    await service.discover_media(media_type=media_type, sort_by=requested_sort)
 
     request = httpx_mock.get_requests()[0]
     assert f"sort_by={expected_sort}" in str(request.url)
@@ -490,7 +490,7 @@ async def test_get_media_translates_date_sort_to_provider_field(
         (MEDIA_TYPE_TELEVISION, "vote_average.asc"),
     ]
 )
-async def test_get_media_forwards_provider_native_sort_unchanged(
+async def test_discover_media_forwards_provider_native_sort_unchanged(
     monkeypatch,
     httpx_mock: HTTPXMock,
     media_type: str,
@@ -502,13 +502,13 @@ async def test_get_media_forwards_provider_native_sort_unchanged(
     httpx_mock.add_response(json=EMPTY_DISCOVER_RESPONSE)
 
     service = TMDBService()
-    await service.get_media(media_type=media_type, sort_by=requested_sort)
+    await service.discover_media(media_type=media_type, sort_by=requested_sort)
 
     request = httpx_mock.get_requests()[0]
     assert f"sort_by={requested_sort}" in str(request.url)
 
 
-def test_get_media_raises_value_error_when_api_key_missing(monkeypatch):
+def test_discover_media_raises_value_error_when_api_key_missing(monkeypatch):
     """Test that ValueError is raised when TMDB_API_KEY is not set."""
     monkeypatch.delenv("TMDB_API_KEY", raising=False)
 
@@ -520,21 +520,21 @@ def test_get_media_raises_value_error_when_api_key_missing(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_media_raises_value_error_for_unsupported_media_type(monkeypatch):
+async def test_discover_media_raises_value_error_for_unsupported_media_type(monkeypatch):
     """Test that ValueError is raised for unsupported media types."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
     service = TMDBService()
 
     with pytest.raises(ValueError) as exc_info:
-        await service.get_media(media_type="unsupported_type")
+        await service.discover_media(media_type="unsupported_type")
 
     assert "Unsupported media type" in str(exc_info.value)
     assert "unsupported_type" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
-async def test_get_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_raises_api_response_error_on_http_error(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns HTTP error."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -547,14 +547,14 @@ async def test_get_media_raises_api_response_error_on_http_error(monkeypatch, ht
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        await service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     assert "TMDB API error" in str(exc_info.value)
     assert "401" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
-async def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_raises_api_response_error_on_invalid_json(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIResponseError is raised when TMDB API returns invalid JSON."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -566,13 +566,13 @@ async def test_get_media_raises_api_response_error_on_invalid_json(monkeypatch, 
     service = TMDBService()
 
     with pytest.raises(APIResponseError) as exc_info:
-        await service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     assert "invalid JSON" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
-async def test_get_media_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
+async def test_discover_media_raises_api_connection_error_on_request_failure(monkeypatch, httpx_mock: HTTPXMock):
     """Test that APIConnectionError is raised when unable to connect to TMDB API."""
     monkeypatch.setenv("TMDB_API_KEY", "test_api_key")
 
@@ -584,6 +584,6 @@ async def test_get_media_raises_api_connection_error_on_request_failure(monkeypa
     service = TMDBService()
 
     with pytest.raises(APIConnectionError) as exc_info:
-        await service.get_media(media_type=MEDIA_TYPE_FILM)
+        await service.discover_media(media_type=MEDIA_TYPE_FILM)
 
     assert "Failed to connect to TMDB API" in str(exc_info.value)

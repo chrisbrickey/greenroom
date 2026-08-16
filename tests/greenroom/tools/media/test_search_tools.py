@@ -4,7 +4,7 @@ import pytest
 
 from greenroom.models.media_types import MEDIA_TYPE_FILM, MEDIA_TYPE_TELEVISION
 from greenroom.services.media_limits import MAX_RESULTS_MAX, MAX_RESULTS_MIN, SEARCH_MAX_RESULTS
-from greenroom.tools.discovery import find_films, find_television
+from greenroom.tools.media import lookup_films, lookup_television
 
 FILM_QUERY = "Test Film"
 TELEVISION_QUERY = "Test Show"
@@ -29,25 +29,25 @@ VALID_LANGUAGE_CODES = ["en", "fr"]
 
 
 class TestFindFilms:
-    """Tests for find_films helper function."""
+    """Tests for lookup_films helper function."""
 
     @pytest.mark.asyncio
     async def test_returns_formatted_results(
         self, mock_media_service, sample_film_media_list, expected_film_payload
     ):
-        """Test find_films formats every field of the service payload."""
+        """Test lookup_films formats every field of the service payload."""
         mock_media_service.search_media.return_value = sample_film_media_list
 
-        result = await find_films(mock_media_service, FILM_QUERY)
+        result = await lookup_films(mock_media_service, FILM_QUERY)
 
         assert result == expected_film_payload
 
     @pytest.mark.asyncio
     async def test_uses_film_media_type_and_default_parameters(self, mock_media_service, sample_film_media_list):
-        """Test find_films uses MEDIA_TYPE_FILM and passes default parameters."""
+        """Test lookup_films uses MEDIA_TYPE_FILM and passes default parameters."""
         mock_media_service.search_media.return_value = sample_film_media_list
 
-        await find_films(mock_media_service, FILM_QUERY)
+        await lookup_films(mock_media_service, FILM_QUERY)
 
         mock_media_service.search_media.assert_called_once_with(
             media_type=MEDIA_TYPE_FILM,
@@ -60,10 +60,10 @@ class TestFindFilms:
 
     @pytest.mark.asyncio
     async def test_uses_film_media_type_with_custom_parameters(self, mock_media_service, sample_film_media_list):
-        """Test find_films uses MEDIA_TYPE_FILM and passes custom parameters."""
+        """Test lookup_films uses MEDIA_TYPE_FILM and passes custom parameters."""
         mock_media_service.search_media.return_value = sample_film_media_list
 
-        await find_films(
+        await lookup_films(
             mock_media_service,
             FILM_QUERY,
             year=2003,
@@ -84,92 +84,92 @@ class TestFindFilms:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("query", BLANK_QUERIES)
     async def test_rejects_blank_query(self, mock_media_service, query: str):
-        """Test find_films requires a non-empty query."""
+        """Test lookup_films requires a non-empty query."""
         with pytest.raises(ValueError, match=QUERY_MESSAGE):
-            await find_films(mock_media_service, query)
+            await lookup_films(mock_media_service, query)
 
     @pytest.mark.asyncio
     async def test_validates_year(self, mock_media_service, sample_film_media_list):
-        """Test find_films validates year parameter."""
+        """Test lookup_films validates year parameter."""
         with pytest.raises(ValueError, match=YEAR_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, year=1899)
+            await lookup_films(mock_media_service, FILM_QUERY, year=1899)
 
         # Boundary: 1900 should be accepted
         mock_media_service.search_media.return_value = sample_film_media_list
-        await find_films(mock_media_service, FILM_QUERY, year=1900)
+        await lookup_films(mock_media_service, FILM_QUERY, year=1900)
 
     @pytest.mark.asyncio
     async def test_validates_page(self, mock_media_service, sample_film_media_list):
-        """Test find_films validates page parameter."""
+        """Test lookup_films validates page parameter."""
         with pytest.raises(ValueError, match=PAGE_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, page=0)
+            await lookup_films(mock_media_service, FILM_QUERY, page=0)
         with pytest.raises(ValueError, match=PAGE_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, page=-1)
+            await lookup_films(mock_media_service, FILM_QUERY, page=-1)
 
         # Boundary: 1 should be accepted
         mock_media_service.search_media.return_value = sample_film_media_list
-        await find_films(mock_media_service, FILM_QUERY, page=1)
+        await lookup_films(mock_media_service, FILM_QUERY, page=1)
 
     @pytest.mark.asyncio
     async def test_validates_max_results(self, mock_media_service, sample_film_media_list):
-        """Test find_films validates max_results parameter."""
+        """Test lookup_films validates max_results parameter."""
         with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MIN - 1)
+            await lookup_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MIN - 1)
         with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, max_results=ABOVE_MAX_RESULTS)
+            await lookup_films(mock_media_service, FILM_QUERY, max_results=ABOVE_MAX_RESULTS)
 
         # Boundaries: both ends of the range should be accepted
         mock_media_service.search_media.return_value = sample_film_media_list
-        await find_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MIN)
-        await find_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MAX)
+        await lookup_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MIN)
+        await lookup_films(mock_media_service, FILM_QUERY, max_results=MAX_RESULTS_MAX)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("display_language", MALFORMED_LANGUAGE_CODES)
     async def test_rejects_malformed_display_language(self, mock_media_service, display_language: str):
-        """Test find_films rejects a display_language that is not a 2-letter code."""
+        """Test lookup_films rejects a display_language that is not a 2-letter code."""
         with pytest.raises(ValueError, match=DISPLAY_LANGUAGE_MESSAGE):
-            await find_films(mock_media_service, FILM_QUERY, display_language=display_language)
+            await lookup_films(mock_media_service, FILM_QUERY, display_language=display_language)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("display_language", VALID_LANGUAGE_CODES)
     async def test_accepts_valid_display_language(
         self, mock_media_service, sample_film_media_list, display_language: str
     ):
-        """Test find_films accepts a well-formed display_language."""
+        """Test lookup_films accepts a well-formed display_language."""
         mock_media_service.search_media.return_value = sample_film_media_list
 
-        await find_films(mock_media_service, FILM_QUERY, display_language=display_language)
+        await lookup_films(mock_media_service, FILM_QUERY, display_language=display_language)
 
     @pytest.mark.asyncio
     async def test_empty_film_results(self, mock_media_service, empty_media_list, expected_empty_payload):
         """Test handling of empty results from service."""
         mock_media_service.search_media.return_value = empty_media_list
 
-        result = await find_films(mock_media_service, UNMATCHED_FILM_QUERY)
+        result = await lookup_films(mock_media_service, UNMATCHED_FILM_QUERY)
 
         assert result == expected_empty_payload
 
 
 class TestFindTelevision:
-    """Tests for find_television helper function."""
+    """Tests for lookup_television helper function."""
 
     @pytest.mark.asyncio
     async def test_returns_formatted_results(
         self, mock_media_service, sample_tv_media_list, expected_television_payload
     ):
-        """Test find_television formats every field of the service payload."""
+        """Test lookup_television formats every field of the service payload."""
         mock_media_service.search_media.return_value = sample_tv_media_list
 
-        result = await find_television(mock_media_service, TELEVISION_QUERY)
+        result = await lookup_television(mock_media_service, TELEVISION_QUERY)
 
         assert result == expected_television_payload
 
     @pytest.mark.asyncio
     async def test_uses_television_media_type_and_default_parameters(self, mock_media_service, sample_tv_media_list):
-        """Test find_television uses MEDIA_TYPE_TELEVISION and passes default parameters."""
+        """Test lookup_television uses MEDIA_TYPE_TELEVISION and passes default parameters."""
         mock_media_service.search_media.return_value = sample_tv_media_list
 
-        await find_television(mock_media_service, TELEVISION_QUERY)
+        await lookup_television(mock_media_service, TELEVISION_QUERY)
 
         mock_media_service.search_media.assert_called_once_with(
             media_type=MEDIA_TYPE_TELEVISION,
@@ -182,10 +182,10 @@ class TestFindTelevision:
 
     @pytest.mark.asyncio
     async def test_uses_television_media_type_with_custom_parameters(self, mock_media_service, sample_tv_media_list):
-        """Test find_television uses MEDIA_TYPE_TELEVISION and passes custom parameters."""
+        """Test lookup_television uses MEDIA_TYPE_TELEVISION and passes custom parameters."""
         mock_media_service.search_media.return_value = sample_tv_media_list
 
-        await find_television(
+        await lookup_television(
             mock_media_service,
             TELEVISION_QUERY,
             year=2022,
@@ -206,67 +206,67 @@ class TestFindTelevision:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("query", BLANK_QUERIES)
     async def test_rejects_blank_query(self, mock_media_service, query: str):
-        """Test find_television requires a non-empty query."""
+        """Test lookup_television requires a non-empty query."""
         with pytest.raises(ValueError, match=QUERY_MESSAGE):
-            await find_television(mock_media_service, query)
+            await lookup_television(mock_media_service, query)
 
     @pytest.mark.asyncio
     async def test_validates_year(self, mock_media_service, sample_tv_media_list):
-        """Test find_television validates year parameter."""
+        """Test lookup_television validates year parameter."""
         with pytest.raises(ValueError, match=YEAR_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, year=1899)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, year=1899)
 
         # Boundary: 1900 should be accepted
         mock_media_service.search_media.return_value = sample_tv_media_list
-        await find_television(mock_media_service, TELEVISION_QUERY, year=1900)
+        await lookup_television(mock_media_service, TELEVISION_QUERY, year=1900)
 
     @pytest.mark.asyncio
     async def test_validates_page(self, mock_media_service, sample_tv_media_list):
-        """Test find_television validates page parameter."""
+        """Test lookup_television validates page parameter."""
         with pytest.raises(ValueError, match=PAGE_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, page=0)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, page=0)
         with pytest.raises(ValueError, match=PAGE_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, page=-1)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, page=-1)
 
         # Boundary: 1 should be accepted
         mock_media_service.search_media.return_value = sample_tv_media_list
-        await find_television(mock_media_service, TELEVISION_QUERY, page=1)
+        await lookup_television(mock_media_service, TELEVISION_QUERY, page=1)
 
     @pytest.mark.asyncio
     async def test_validates_max_results(self, mock_media_service, sample_tv_media_list):
-        """Test find_television validates max_results parameter."""
+        """Test lookup_television validates max_results parameter."""
         with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MIN - 1)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MIN - 1)
         with pytest.raises(ValueError, match=MAX_RESULTS_RANGE_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, max_results=ABOVE_MAX_RESULTS)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, max_results=ABOVE_MAX_RESULTS)
 
         # Boundaries: both ends of the range should be accepted
         mock_media_service.search_media.return_value = sample_tv_media_list
-        await find_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MIN)
-        await find_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MAX)
+        await lookup_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MIN)
+        await lookup_television(mock_media_service, TELEVISION_QUERY, max_results=MAX_RESULTS_MAX)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("display_language", MALFORMED_LANGUAGE_CODES)
     async def test_rejects_malformed_display_language(self, mock_media_service, display_language: str):
-        """Test find_television rejects a display_language that is not a 2-letter code."""
+        """Test lookup_television rejects a display_language that is not a 2-letter code."""
         with pytest.raises(ValueError, match=DISPLAY_LANGUAGE_MESSAGE):
-            await find_television(mock_media_service, TELEVISION_QUERY, display_language=display_language)
+            await lookup_television(mock_media_service, TELEVISION_QUERY, display_language=display_language)
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("display_language", VALID_LANGUAGE_CODES)
     async def test_accepts_valid_display_language(
         self, mock_media_service, sample_tv_media_list, display_language: str
     ):
-        """Test find_television accepts a well-formed display_language."""
+        """Test lookup_television accepts a well-formed display_language."""
         mock_media_service.search_media.return_value = sample_tv_media_list
 
-        await find_television(mock_media_service, TELEVISION_QUERY, display_language=display_language)
+        await lookup_television(mock_media_service, TELEVISION_QUERY, display_language=display_language)
 
     @pytest.mark.asyncio
     async def test_empty_television_results(self, mock_media_service, empty_media_list, expected_empty_payload):
         """Test handling of empty results from service."""
         mock_media_service.search_media.return_value = empty_media_list
 
-        result = await find_television(mock_media_service, UNMATCHED_TELEVISION_QUERY)
+        result = await lookup_television(mock_media_service, UNMATCHED_TELEVISION_QUERY)
 
         assert result == expected_empty_payload
